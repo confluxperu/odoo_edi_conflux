@@ -4,7 +4,10 @@ from odoo import api, fields, models
 class AccountMove(models.Model):
     _inherit = 'account.move'
 
-    l10n_pe_edi_conflux_uid = fields.Char(string='DTE Conflux UID', copy=False)
+    l10n_pe_edi_pse_uid = fields.Char(string='PSE Unique identifier', copy=False)
+    l10n_pe_edi_pse_cancel_uid = fields.Char(string='PSE Identifier for Cancellation', copy=False)
+    l10n_pe_edi_accepted_by_sunat = fields.Boolean(string='EDI Accepted by Sunat', copy=False)
+    l10n_pe_edi_void_accepted_by_sunat = fields.Boolean(string='Void EDI Accepted by Sunat', copy=False)
     l10n_pe_edi_rectification_ref_type = fields.Many2one('l10n_latam.document.type', string='Rectification - Invoice Type')
     l10n_pe_edi_rectification_ref_number = fields.Char('Rectification - Invoice number')
     l10n_pe_edi_rectification_ref_date = fields.Char('Rectification - Invoice Date')
@@ -49,3 +52,12 @@ class AccountMove(models.Model):
             self.write({
                 'l10n_pe_edi_payment_fee_ids': invoice_date_due_vals_list
             })
+
+class AccountMoveLine(models.Model):
+    _inherit = 'account.move.line'
+
+    l10n_pe_edi_downpayment_line = fields.Boolean('Is Downpayment?', store=True, default=False)
+    l10n_pe_edi_downpayment_invoice_id = fields.Many2one('account.move', string='Downpayment Invoice', store=True, readonly=True, help='Invoices related to the advance regualization')
+    l10n_pe_edi_downpayment_ref_type = fields.Selection([('02','Factura'),('03','Boleta de venta')], string='Downpayment Ref. Type')
+    l10n_pe_edi_downpayment_ref_number = fields.Char('Downpayment Ref. Number')
+    l10n_pe_edi_downpayment_date = fields.Date('Downpayment date')
