@@ -110,7 +110,7 @@ class AccountEdiFormat(models.Model):
             "items": []
         }
 
-        for tax_subtotal in base_dte['tax_details']['grouped_taxes']:
+        for tax_subtotal in base_dte['tax_details']['tax_details']['group_tax_details']:
             if tax_subtotal['l10n_pe_edi_group_code']=='IGV':
                 conflux_dte['total_gravada']+=tax_subtotal['base']
                 conflux_dte['total_igv']+=tax_subtotal['amount']
@@ -135,8 +135,8 @@ class AccountEdiFormat(models.Model):
         descuento_importe_03 = 0
         descuento_base = 0
 
-        if base_dte.get('invoice_lines_vals'):
-            for invoice_line in base_dte.get('invoice_lines_vals', []):
+        if base_dte.get('invoice_line_vals_list'):
+            for invoice_line in base_dte.get('invoice_line_vals_list', []):
                 line = invoice_line.get('line')
                 if line.price_subtotal<0 and line.l10n_pe_edi_allowance_charge_reason_code=='02':
                     descuento_importe_02+=abs(line.price_subtotal)
@@ -552,9 +552,9 @@ class AccountEdiFormat(models.Model):
             return super()._is_compatible_with_journal(journal)
         return journal.type == 'sale' and journal.country_code == 'PE' and journal.l10n_latam_use_documents
 
-    def _post_invoice_edi(self, invoices, test_mode=False):
+    def _post_invoice_edi(self, invoices):
         if self.code != 'pe_pse':
-            return super()._post_invoice_edi(invoices, test_mode=test_mode)
+            return super()._post_invoice_edi(invoices)
 
         invoice = invoices # Batching is disabled for this EDI.
         provider = invoice.company_id.l10n_pe_edi_provider
@@ -600,10 +600,10 @@ class AccountEdiFormat(models.Model):
 
         return {invoice: res}
 
-    def _cancel_invoice_edi(self, invoices, test_mode=False):
+    def _cancel_invoice_edi(self, invoices):
         # OVERRIDE
         if self.code != 'pe_pse':
-            return super()._cancel_invoice_edi(invoices, test_mode=test_mode)
+            return super()._cancel_invoice_edi(invoices)
 
         invoice = invoices # Batching is disabled for this EDI.
         edi_attachments = self.env['ir.attachment']

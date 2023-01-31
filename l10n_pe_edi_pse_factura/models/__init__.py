@@ -6,4 +6,3 @@ from . import invoice_payment_fee
 from . import invoice_transport_ref
 from . import account_move
 from . import mail_template
-from . import sale_order
