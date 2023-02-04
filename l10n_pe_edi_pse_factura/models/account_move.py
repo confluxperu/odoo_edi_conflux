@@ -36,7 +36,7 @@ class AccountMove(models.Model):
 
     def l10n_pe_edi_retention_amount(self):
         if self.partner_id.l10n_pe_edi_retention_type:
-            return self.amount_total*(0.03 if self.partner_id.l10n_pe_dte_retention_type=='01' else 0.06)
+            return self.amount_total*(0.03 if self.partner_id.l10n_pe_edi_retention_type=='01' else 0.06)
         return 0
 
     def l10n_pe_edi_credit_amount_deduction(self):

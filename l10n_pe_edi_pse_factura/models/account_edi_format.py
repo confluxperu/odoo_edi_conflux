@@ -261,7 +261,7 @@ class AccountEdiFormat(models.Model):
         if record.partner_id.l10n_pe_edi_retention_type:
             conflux_dte["retencion_tipo"]=record.partner_id.l10n_pe_edi_retention_type
             conflux_dte["total_retencion"]=record.l10n_pe_edi_retention_amount()
-            conflux_dte["retencion_base_imponible"]=conflux_dte["total_retencion"]/(0.03 if self.partner_id.l10n_pe_dte_retention_type=='01' else 0.06)
+            conflux_dte["retencion_base_imponible"]=conflux_dte["total_retencion"]/(0.03 if record.partner_id.l10n_pe_edi_retention_type=='01' else 0.06)
 
         if record.l10n_pe_edi_transportref_ids:
             conflux_dte['guias'] = []
