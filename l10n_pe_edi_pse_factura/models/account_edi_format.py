@@ -110,24 +110,24 @@ class AccountEdiFormat(models.Model):
             "items": []
         }
 
-        for tax_subtotal in base_dte['tax_details']['tax_details']['group_tax_details']:
-            if tax_subtotal['l10n_pe_edi_group_code']=='IGV':
-                conflux_dte['total_gravada']+=tax_subtotal['base']
-                conflux_dte['total_igv']+=tax_subtotal['amount']
-            if tax_subtotal['l10n_pe_edi_group_code']=='EXO':
-                conflux_dte['total_exonerada']+=tax_subtotal['base']
-            if tax_subtotal['l10n_pe_edi_group_code']=='INA':
-                conflux_dte['total_inafecta']+=tax_subtotal['base']
-            if tax_subtotal['l10n_pe_edi_group_code']=='GRA':
-                conflux_dte['total_gratuita']+=tax_subtotal['base']
-            if tax_subtotal['l10n_pe_edi_group_code']=='EXP':
-                conflux_dte['total_exportacion']+=tax_subtotal['base']
-            if tax_subtotal['l10n_pe_edi_group_code']=='ISC':
-                conflux_dte['total_isc']+=tax_subtotal['amount']
-            if tax_subtotal['l10n_pe_edi_group_code']=='ICBPER':
-                conflux_dte['total_icbper']+=tax_subtotal['amount']
-            if tax_subtotal['l10n_pe_edi_group_code']=='OTROS':
-                conflux_dte['total_otros_cargos']+=tax_subtotal['amount']
+        for tax_subtotal in base_dte['tax_details_grouped']['tax_details'].values():
+            if tax_subtotal['l10n_pe_edi_code']=='IGV':
+                conflux_dte['total_gravada']+=base_dte['balance_multiplicator']*tax_subtotal['base_amount_currency']
+                conflux_dte['total_igv']+=base_dte['balance_multiplicator']*tax_subtotal['tax_amount_currency']
+            if tax_subtotal['l10n_pe_edi_code']=='EXO':
+                conflux_dte['total_exonerada']+=base_dte['balance_multiplicator']*tax_subtotal['base_amount_currency']
+            if tax_subtotal['l10n_pe_edi_code']=='INA':
+                conflux_dte['total_inafecta']+=base_dte['balance_multiplicator']*tax_subtotal['base_amount_currency']
+            if tax_subtotal['l10n_pe_edi_code']=='GRA':
+                conflux_dte['total_gratuita']+=base_dte['balance_multiplicator']*tax_subtotal['base_amount_currency']
+            if tax_subtotal['l10n_pe_edi_code']=='EXP':
+                conflux_dte['total_exportacion']+=base_dte['balance_multiplicator']*tax_subtotal['base_amount_currency']
+            if tax_subtotal['l10n_pe_edi_code']=='ISC':
+                conflux_dte['total_isc']+=base_dte['balance_multiplicator']*tax_subtotal['tax_amount_currency']
+            if tax_subtotal['l10n_pe_edi_code']=='ICBPER':
+                conflux_dte['total_icbper']+=base_dte['balance_multiplicator']*tax_subtotal['tax_amount_currency']
+            if tax_subtotal['l10n_pe_edi_code']=='OTROS':
+                conflux_dte['total_otros_cargos']+=base_dte['balance_multiplicator']*tax_subtotal['tax_amount_currency']
         
         conflux_dte['total'] = conflux_dte['total_gravada']+conflux_dte['total_igv']+conflux_dte['total_exonerada']+conflux_dte['total_inafecta']+conflux_dte['total_exportacion']+conflux_dte['total_isc']+conflux_dte['total_icbper']
 
@@ -138,6 +138,7 @@ class AccountEdiFormat(models.Model):
         if base_dte.get('invoice_line_vals_list'):
             for invoice_line in base_dte.get('invoice_line_vals_list', []):
                 line = invoice_line.get('line')
+                invoice_line['tax_details'] = base_dte['tax_details']['invoice_line_tax_details'][line]['tax_details'].values()
                 if line.price_subtotal<0 and line.l10n_pe_edi_allowance_charge_reason_code=='02':
                     descuento_importe_02+=abs(line.price_subtotal)
                     continue
@@ -154,45 +155,22 @@ class AccountEdiFormat(models.Model):
                     isc_type = ''
                     is_free = False
 
-                    if line.discount >= 100.0:  
-                        # Discount >= 100% means the product is free and the IGV type should be 'No onerosa' and 'taxed'
-                        igv_type = line.tax_ids.filtered(lambda r: r.l10n_pe_edi_tax_code == '9996')[0].l10n_pe_edi_igv_type
-                    elif any(tax['l10n_pe_edi_tax_code'] in ['1000'] for tax in invoice_line['tax_details']['taxes']):
-                        # Tax with code '1000' is IGV
-                        igv_type = '10'
-                    elif all(tax['l10n_pe_edi_tax_code'] in ['9997'] for tax in invoice_line['tax_details']['taxes']):
-                        # Tax with code '9997' is Exonerated
-                        igv_type = '20'
-                    elif all(tax['l10n_pe_edi_tax_code'] in ['9998'] for tax in invoice_line['tax_details']['taxes']):
-                        # Tax with code '9998' is Unaffected
-                        igv_type = '30'
-                    elif all(tax['l10n_pe_edi_tax_code'] in ['9995'] for tax in invoice_line['tax_details']['taxes']):
-                        # Tax with code '9995' is for Exportation
-                        igv_type = '40'
-                    elif any(tax['l10n_pe_edi_tax_code'] in ['9996'] for tax in invoice_line['tax_details']['taxes']):
-                        # Tax with code '9996' is for Free operations
-                        is_free = True
-                        for tax in invoice_line['tax_details']['taxes']:
-                            if tax['l10n_pe_edi_tax_code'] == '9996':
-                                tax_browse = self.env['account.tax'].browse(tax['id'])
-                                igv_type = tax_browse.l10n_pe_edi_affectation_reason
-                                break
-
-                    if any(tax['l10n_pe_edi_tax_code'] in ['2000'] for tax in invoice_line['tax_details']['taxes']):
-                        isc_type = line.tax_ids.filtered(lambda r: r.l10n_pe_edi_tax_code == '2000')[0].l10n_pe_edi_isc_type
-
                     igv_amount = 0
                     isc_amount = 0
                     icbper_amount = 0
 
-                    for tax in invoice_line['tax_details']['taxes']:
-                        if tax['l10n_pe_edi_group_code'] == 'IGV':
-                            igv_amount+=tax['amount']
-                        if tax['l10n_pe_edi_group_code'] == 'ISC':
-                            isc_amount+=tax['amount']
-                        if tax['l10n_pe_edi_group_code'] == 'ICBPER':
-                            icbper_amount+=tax['amount']
-
+                    for tax in invoice_line['tax_details']:
+                        if tax['tax'].tax_group_id.l10n_pe_edi_code == 'IGV':
+                            igv_amount+=base_dte['balance_multiplicator']*tax['tax_amount']
+                        if tax['tax'].tax_group_id.l10n_pe_edi_code == 'ISC':
+                            isc_type = tax['tax'].l10n_pe_edi_affectation_reason
+                            isc_amount+=base_dte['balance_multiplicator']*tax['tax_amount']
+                        if tax['tax'].tax_group_id.l10n_pe_edi_code == 'ICBPER':
+                            icbper_amount+=base_dte['balance_multiplicator']*tax['tax_amount']
+                        if tax['tax'].tax_group_id.l10n_pe_edi_code in ('IGV','EXO','INA','EXP','GRA'):
+                            igv_type = tax['tax'].l10n_pe_edi_affectation_reason
+                        if tax['tax'].tax_group_id.l10n_pe_edi_code == 'GRA':
+                            is_free = True
                         
                     _item = {
                         "codigo":line.product_id.default_code if line.product_id.default_code else '',
@@ -200,10 +178,10 @@ class AccountEdiFormat(models.Model):
                         "descripcion":line.name.replace('[%s] ' % line.product_id.default_code,'') if line.product_id else line.name,
                         "cantidad":abs(line.quantity),
                         "unidad_de_medida":line.product_uom_id.l10n_pe_edi_measure_unit_code if line.product_uom_id.l10n_pe_edi_measure_unit_code else default_uom,
-                        "valor_unitario": invoice_line['tax_details']['unit_total_excluded'],
-                        "precio_unitario": invoice_line['tax_details']['unit_total_included'],
-                        "subtotal":invoice_line['tax_details']['total_excluded'] if not is_free else 0,
-                        "total":invoice_line['tax_details']['total_included'] if not is_free else icbper_amount,
+                        "valor_unitario": invoice_line['price_subtotal_unit'],
+                        "precio_unitario": invoice_line['price_total_unit'],
+                        "subtotal":line.price_subtotal if not is_free else 0,
+                        "total":line.price_total if not is_free else icbper_amount,
                         "tipo_de_igv": igv_type,
                         "igv":igv_amount,
                         "isc":isc_amount,
@@ -280,15 +258,10 @@ class AccountEdiFormat(models.Model):
             conflux_dte["codigo_detraccion"]=spot['PaymentMeansID']
             conflux_dte['medio_de_pago_detraccion']=spot['PaymentMeansCode']
         
-        if record.l10n_pe_edi_retention_type:
-            conflux_dte["retencion_tipo"]=record.l10n_pe_edi_retention_type
-            conflux_dte["retencion_base_imponible"]=record.amount_total
-            retention_percentage = 0
-            if record.l10n_pe_dte_retention_type=='01':
-                retention_percentage = 0.03
-            elif record.l10n_pe_dte_retention_type=='02':
-                retention_percentage = 0.06
-            conflux_dte["total_retencion"]=retention_percentage*conflux_dte["retencion_base_imponible"]
+        if record.partner_id.l10n_pe_edi_retention_type:
+            conflux_dte["retencion_tipo"]=record.partner_id.l10n_pe_edi_retention_type
+            conflux_dte["total_retencion"]=record.l10n_pe_edi_retention_amount()
+            conflux_dte["retencion_base_imponible"]=conflux_dte["total_retencion"]/(0.03 if self.partner_id.l10n_pe_dte_retention_type=='01' else 0.06)
 
         if record.l10n_pe_edi_transportref_ids:
             conflux_dte['guias'] = []
@@ -306,7 +279,6 @@ class AccountEdiFormat(models.Model):
                 invoice.company_id, invoice.l10n_pe_edi_pse_uid)
         else:
             edi_conflux_values = self._l10n_pe_edi_get_edi_values_conflux(invoice)
-            log.info(edi_conflux_values)
             service_iap = self._l10n_pe_edi_sign_service_step_1_conflux(
                 invoice.company_id, edi_conflux_values, invoice.l10n_latam_document_type_id.code,
                 invoice._l10n_pe_edi_get_serie_folio())
@@ -320,6 +292,39 @@ class AccountEdiFormat(models.Model):
         if update_invoice:
             invoice.write(update_invoice)
         return service_iap
+    
+    def _l10n_pe_edi_post_invoice_web_service_pse(self, invoice, edi_filename):
+        provider = invoice.company_id.l10n_pe_edi_provider
+        res = getattr(self, '_l10n_pe_edi_sign_invoices_%s' % provider)(invoice)
+
+        if res.get('error'):
+            return res
+
+        # Chatter.
+        documents = []
+        if res.get('xml_document'):
+            documents.append(('%s.xml' % edi_filename, res['xml_document']))
+        if res.get('cdr'):
+            documents.append(('CDR-%s.xml' % edi_filename, res['cdr']))
+        if res.get('pdf'):
+            documents.append(('CDR-%s.xml' % edi_filename, res['pdf']))
+        if documents:
+            zip_edi_str = self._l10n_pe_edi_zip_edi_document(documents)
+            res['attachment'] = self.env['ir.attachment'].create({
+                'res_model': invoice._name,
+                'res_id': invoice.id,
+                'type': 'binary',
+                'name': '%s.zip' % edi_filename,
+                'datas': base64.encodebytes(zip_edi_str),
+                'mimetype': 'application/zip',
+            })
+            message = _("The EDI document was successfully created and signed by the government.")
+            invoice.with_context(no_new_invoice=True).message_post(
+                body=message,
+                attachment_ids=res['attachment'].ids,
+            )
+
+        return res
 
     def _l10n_pe_edi_sign_service_step_2_conflux(self, company, uid_invoice):
         try:
@@ -350,6 +355,7 @@ class AccountEdiFormat(models.Model):
                     r_xml = requests.get(result['enlace_del_xml'])
                     xml_document = r_xml.content
             return {
+                'success':True,
                 'xml_document':xml_document,
                 'pdf':pdf_url,
                 'cdr':cdr,
@@ -394,6 +400,7 @@ class AccountEdiFormat(models.Model):
                     r_xml = requests.get(result['success']['data']['enlace_del_xml'])
                     xml_document = r_xml.content
                 return {
+                    'success':True,
                     'uid':result['success']['data']['uid'],
                     'xml_document':xml_document,
                     'pdf':pdf_url,
@@ -419,7 +426,6 @@ class AccountEdiFormat(models.Model):
         return {'xml_document': xml_document, 'cdr': cdr, 'extra_msg': extra_msg}
     
     def _l10n_pe_edi_pse_cancel_invoices_step_1_conflux(self, company, invoice):
-        log.info('***********_l10n_pe_edi_cancel_invoices_step_1_conflux*********')
         self.ensure_one()
         try:
             result = request_json(url=DEFAULT_CONFLUX_FACTURA_BAJA_ENDPOINT, method='post', token=company.l10n_pe_edi_pse_secret_key, data_dict={'id':invoice.l10n_pe_edi_pse_uid})
@@ -551,13 +557,13 @@ class AccountEdiFormat(models.Model):
         if self.code != 'pe_pse':
             return super()._is_compatible_with_journal(journal)
         return journal.type == 'sale' and journal.country_code == 'PE' and journal.l10n_latam_use_documents
-
+    
     def _post_invoice_edi(self, invoices):
+        # OVERRIDE
         if self.code != 'pe_pse':
             return super()._post_invoice_edi(invoices)
 
         invoice = invoices # Batching is disabled for this EDI.
-        provider = invoice.company_id.l10n_pe_edi_provider
 
         edi_filename = '%s-%s-%s' % (
             invoice.company_id.vat,
@@ -569,34 +575,7 @@ class AccountEdiFormat(models.Model):
         if not latam_invoice_type:
             return {invoice: {'error': _("Missing LATAM document code.")}}
 
-        res = getattr(self, '_l10n_pe_edi_sign_invoices_%s' % provider)(invoice)
-
-        '''if res.get('error'):
-            return {invoice: res}'''
-
-        # Chatter.
-        documents = []
-        if res.get('xml_document'):
-            documents.append(('%s.xml' % edi_filename, res['xml_document']))
-        if res.get('cdr'):
-            documents.append(('CDR-%s.xml' % edi_filename, res['cdr']))
-        if res.get('pdf'):
-            documents.append(('%s.pdf' % edi_filename, res['pdf']))
-        if documents:
-            zip_edi_str = self._l10n_pe_edi_zip_edi_document(documents)
-            res['attachment'] = self.env['ir.attachment'].create({
-                'res_model': invoice._name,
-                'res_id': invoice.id,
-                'type': 'binary',
-                'name': '%s.zip' % edi_filename,
-                'datas': base64.encodebytes(zip_edi_str),
-                'mimetype': 'application/zip',
-            })
-            message = _("The EDI document was successfully created and signed by the government.")
-            invoice.with_context(no_new_invoice=True).message_post(
-                body=message,
-                attachment_ids=res['attachment'].ids,
-            )
+        res = self._l10n_pe_edi_post_invoice_web_service_pse(invoice, edi_filename)
 
         return {invoice: res}
 

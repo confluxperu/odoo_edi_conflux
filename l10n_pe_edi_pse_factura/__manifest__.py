@@ -25,6 +25,7 @@ Extends EDI Peru Localization
         'data/account_edi_data.xml',
         'security/ir.model.access.csv',
         'views/res_config_settings_views.xml',
+        'views/res_partner_view.xml',
         'views/account_move_views.xml',
     ],
     'installable': True,
