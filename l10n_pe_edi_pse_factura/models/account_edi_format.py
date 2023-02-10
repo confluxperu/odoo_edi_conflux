@@ -345,7 +345,7 @@ class AccountEdiFormat(models.Model):
 
         xml_document = None
         cdr = None
-        pdf_url = None
+        pdf = None
     
         if result.get('emision_aceptada', False):
             if result.get('enlace_del_cdr', False):
@@ -357,7 +357,7 @@ class AccountEdiFormat(models.Model):
             return {
                 'success':True,
                 'xml_document':xml_document,
-                'pdf':pdf_url,
+                'pdf':pdf,
                 'cdr':cdr,
                 'edi_accepted':True
             }
@@ -389,7 +389,7 @@ class AccountEdiFormat(models.Model):
 
         xml_document = None
         cdr = None
-        pdf_url = None
+        pdf = None
         
         if result.get('status')=='success':
             if result['success']['data'].get('emision_aceptada', False):
@@ -403,7 +403,7 @@ class AccountEdiFormat(models.Model):
                     'success':True,
                     'uid':result['success']['data']['uid'],
                     'xml_document':xml_document,
-                    'pdf':pdf_url,
+                    'pdf':pdf,
                     'cdr':cdr,
                     'edi_accepted': True
                 }
