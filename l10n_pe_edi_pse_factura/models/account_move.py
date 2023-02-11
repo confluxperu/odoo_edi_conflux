@@ -68,6 +68,14 @@ class AccountMove(models.Model):
                 'l10n_pe_edi_payment_fee_ids': invoice_date_due_vals_list
             })
 
+    def _prepare_edi_vals_to_export(self):
+        res = super()._prepare_edi_vals_to_export()
+        res.update({
+            'price_subtotal_unit': self.price_subtotal / self.quantity if self.quantity else 0.0,
+            'price_total_unit': self.price_total / self.quantity if self.quantity else 0.0,
+        })
+        return res
+
 class AccountMoveLine(models.Model):
     _inherit = 'account.move.line'
 
