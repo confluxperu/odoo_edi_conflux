@@ -68,14 +68,6 @@ class AccountMove(models.Model):
                 'l10n_pe_edi_payment_fee_ids': invoice_date_due_vals_list
             })
 
-    def _prepare_edi_vals_to_export(self):
-        res = super()._prepare_edi_vals_to_export()
-        res.update({
-            'price_subtotal_unit': self.price_subtotal / self.quantity if self.quantity else 0.0,
-            'price_total_unit': self.price_total / self.quantity if self.quantity else 0.0,
-        })
-        return res
-
 class AccountMoveLine(models.Model):
     _inherit = 'account.move.line'
 
@@ -84,3 +76,11 @@ class AccountMoveLine(models.Model):
     l10n_pe_edi_downpayment_ref_type = fields.Selection([('02','Factura'),('03','Boleta de venta')], string='Downpayment Ref. Type')
     l10n_pe_edi_downpayment_ref_number = fields.Char('Downpayment Ref. Number')
     l10n_pe_edi_downpayment_date = fields.Date('Downpayment date')
+
+    def _prepare_edi_vals_to_export(self):
+        res = super()._prepare_edi_vals_to_export()
+        res.update({
+            'price_subtotal_unit': self.price_subtotal / self.quantity if self.quantity else 0.0,
+            'price_total_unit': self.price_total / self.quantity if self.quantity else 0.0,
+        })
+        return res
