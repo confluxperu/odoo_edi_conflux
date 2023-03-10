@@ -84,7 +84,7 @@ class AccountEdiFormat(models.Model):
                 else:
                     unzipped_cdr = self._l10n_pe_edi_unzip_edi_document(base64.b64decode(application_response[0].text))
                     result.append([content_name[2:], base64.b64encode(unzipped_cdr)])
-        return 
+        return result
 
     def _l10n_pe_edi_get_edi_values_conflux(self, invoice):
         base_dte = self._l10n_pe_edi_get_edi_values(invoice)
