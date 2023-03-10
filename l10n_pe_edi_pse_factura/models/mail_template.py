@@ -10,4 +10,4 @@ class MailTemplate(models.Model):
         if document.state=='to_send' and document.move_id.l10n_pe_edi_pse_uid and document.move_id.company_id.l10n_pe_edi_provider=='conflux':
             #TODO Download XML file
             pass
-        return document.edi_format_id._l10n_pe_edi_unzip_all_edi_documents(document.attachment_id.datas)
+        return document.edi_format_id._l10n_pe_edi_pse_unzip_all_edi_documents(document.attachment_id.datas)
