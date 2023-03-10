@@ -159,6 +159,8 @@ class AccountEdiFormat(models.Model):
                     isc_amount = 0
                     icbper_amount = 0
 
+                    log.info(invoice_line['tax_details'])
+
                     for tax in invoice_line['tax_details']:
                         if tax['tax'].tax_group_id.l10n_pe_edi_code == 'IGV':
                             igv_amount+=base_dte['balance_multiplicator']*tax['tax_amount']
