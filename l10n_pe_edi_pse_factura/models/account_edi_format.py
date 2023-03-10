@@ -159,16 +159,14 @@ class AccountEdiFormat(models.Model):
                     isc_amount = 0
                     icbper_amount = 0
 
-                    log.info(invoice_line['tax_details'])
-
                     for tax in invoice_line['tax_details']:
                         if tax['tax'].tax_group_id.l10n_pe_edi_code == 'IGV':
-                            igv_amount+=base_dte['balance_multiplicator']*tax['tax_amount']
+                            igv_amount+=base_dte['balance_multiplicator']*tax['tax_amount_currency']
                         if tax['tax'].tax_group_id.l10n_pe_edi_code == 'ISC':
                             isc_type = tax['tax'].l10n_pe_edi_affectation_reason
-                            isc_amount+=base_dte['balance_multiplicator']*tax['tax_amount']
+                            isc_amount+=base_dte['balance_multiplicator']*tax['tax_amount_currency']
                         if tax['tax'].tax_group_id.l10n_pe_edi_code == 'ICBPER':
-                            icbper_amount+=base_dte['balance_multiplicator']*tax['tax_amount']
+                            icbper_amount+=base_dte['balance_multiplicator']*tax['tax_amount_currency']
                         if tax['tax'].tax_group_id.l10n_pe_edi_code in ('IGV','EXO','INA','EXP','GRA'):
                             igv_type = tax['tax'].l10n_pe_edi_affectation_reason
                         if tax['tax'].tax_group_id.l10n_pe_edi_code == 'GRA':
