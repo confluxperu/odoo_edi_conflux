@@ -271,6 +271,8 @@ class AccountEdiFormat(models.Model):
                     'guia_serie_numero': despatch.ref_number
                 })
 
+        log.info(conflux_dte)
+
         return conflux_dte
 
     def _l10n_pe_edi_sign_invoices_conflux(self, invoice):
