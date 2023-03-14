@@ -54,7 +54,7 @@ class AccountMove(models.Model):
             invoice_date_due_vals_list = []
             first_time = True
             amount_deduction = self.l10n_pe_edi_credit_amount_deduction()
-            for rec_line in self.line_ids.filtered(lambda l: l.account_internal_type=='receivable'):
+            for rec_line in self.line_ids.filtered(lambda l: l.account_type=='receivable'):
                 amount = rec_line.amount_currency
                 if rec_line.date_maturity<=self.invoice_date:
                     continue
