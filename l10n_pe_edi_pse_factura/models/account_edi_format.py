@@ -162,12 +162,12 @@ class AccountEdiFormat(models.Model):
 
                     for tax in invoice_line['tax_details']:
                         if tax['tax'].tax_group_id.l10n_pe_edi_code == 'IGV':
-                            igv_amount+=tax['tax_amount']
+                            igv_amount+=tax['tax_amount_currency']
                         if tax['tax'].tax_group_id.l10n_pe_edi_code == 'ISC':
                             isc_type = tax['tax'].l10n_pe_edi_affectation_reason
-                            isc_amount+=tax['tax_amount']
+                            isc_amount+=tax['tax_amount_currency']
                         if tax['tax'].tax_group_id.l10n_pe_edi_code == 'ICBPER':
-                            icbper_amount+=tax['tax_amount']
+                            icbper_amount+=tax['tax_amount_currency']
                         if tax['tax'].tax_group_id.l10n_pe_edi_code in ('IGV','EXO','INA','EXP','GRA'):
                             igv_type = tax['tax'].l10n_pe_edi_affectation_reason
                         if tax['tax'].tax_group_id.l10n_pe_edi_code == 'GRA':
