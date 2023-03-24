@@ -73,6 +73,10 @@ class AccountMove(models.Model):
         pe_edi_format = self.env.ref('l10n_pe_edi_pse_factura.edi_pe_pse')
         pe_invoices = self.filtered(pe_edi_format._is_required_for_invoice)
         if pe_invoices:
+            if pe_invoices.l10n_pe_edi_pse_uid:
+                for doc in pe_invoices.edi_document_ids:
+                    if doc.state=='to_send':
+                        doc.write({'state':'sent'})
             cancel_reason_needed = pe_invoices.filtered(lambda move: not move.l10n_pe_edi_cancel_reason)
             if cancel_reason_needed:
                 return self.env.ref('l10n_pe_edi.action_l10n_pe_edi_cancel').sudo().read()[0]
