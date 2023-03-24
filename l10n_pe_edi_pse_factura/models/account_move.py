@@ -68,6 +68,16 @@ class AccountMove(models.Model):
                 'l10n_pe_edi_payment_fee_ids': invoice_date_due_vals_list
             })
 
+    def button_cancel_posted_moves(self):
+        # OVERRIDE
+        pe_edi_format = self.env.ref('l10n_pe_edi_pse_factura.edi_pe_pse')
+        pe_invoices = self.filtered(pe_edi_format._is_required_for_invoice)
+        if pe_invoices:
+            cancel_reason_needed = pe_invoices.filtered(lambda move: not move.l10n_pe_edi_cancel_reason)
+            if cancel_reason_needed:
+                return self.env.ref('l10n_pe_edi.action_l10n_pe_edi_cancel').sudo().read()[0]
+        return super().button_cancel_posted_moves()
+
 class AccountMoveLine(models.Model):
     _inherit = 'account.move.line'
 
