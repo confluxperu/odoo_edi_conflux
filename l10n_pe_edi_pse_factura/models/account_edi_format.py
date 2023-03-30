@@ -218,8 +218,8 @@ class AccountEdiFormat(models.Model):
                     if line.discount>0 and line.discount<100:
                         _item['descuento_tipo']=line.l10n_pe_edi_allowance_charge_reason_code if line.l10n_pe_edi_allowance_charge_reason_code else '00'
                         _item['descuento_factor']=(line.discount or 0.0) / 100.0
-                        _item['descuento_base']=line.price_subtotal/(1.0 - _item['discount_factor'])
-                        _item['descuento_importe']=_item['discount_base'] * _item['discount_factor']
+                        _item['descuento_base']=line.price_subtotal/(1.0 - _item['descuento_factor'])
+                        _item['descuento_importe']=_item['descuento_base'] * _item['descuento_factor']
 
                     if isc_amount>0:
                         _item['tipo_de_calculo_isc'] = isc_type
