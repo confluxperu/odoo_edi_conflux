@@ -68,15 +68,20 @@ class AccountMove(models.Model):
                 'l10n_pe_edi_payment_fee_ids': invoice_date_due_vals_list
             })
 
+    def button_cancel(self):
+        pe_edi_format = self.env.ref('l10n_pe_edi_pse_factura.edi_pe_pse')
+        if pe_edi_format._is_required_for_invoice(self) and self.is_sale_document() and self.l10n_pe_edi_pse_uid and not self.l10n_pe_edi_pse_cancel_uid:
+            cancel_reason = self.l10n_pe_edi_cancel_reason or 'Anulacion'
+            self.write({'l10n_pe_edi_cancel_reason':cancel_reason})
+            self.edi_document_ids.filtered(lambda doc: doc.state == 'to_send').write({'state': 'sent', 'error': False, 'blocking_level': False})
+        res = super().button_cancel()
+        return res
+
     def button_cancel_posted_moves(self):
         # OVERRIDE
         pe_edi_format = self.env.ref('l10n_pe_edi_pse_factura.edi_pe_pse')
         pe_invoices = self.filtered(pe_edi_format._is_required_for_invoice)
         if pe_invoices:
-            if pe_invoices.l10n_pe_edi_pse_uid:
-                for doc in pe_invoices.edi_document_ids:
-                    if doc.state=='to_send':
-                        doc.write({'state':'sent'})
             cancel_reason_needed = pe_invoices.filtered(lambda move: not move.l10n_pe_edi_cancel_reason)
             if cancel_reason_needed:
                 return self.env.ref('l10n_pe_edi.action_l10n_pe_edi_cancel').sudo().read()[0]
