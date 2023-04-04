@@ -6,6 +6,27 @@ class AccountMove(models.Model):
 
     l10n_pe_edi_pse_uid = fields.Char(string='PSE Unique identifier', copy=False)
     l10n_pe_edi_pse_cancel_uid = fields.Char(string='PSE Identifier for Cancellation', copy=False)
+    l10n_pe_edi_pse_attachment_ids = fields.Many2many('ir.attachment', string='EDI Attachments')
+    l10n_pe_edi_pse_status = fields.Selection([
+        ('ask_for_status', 'Ask For Status'),
+        ('accepted', 'Accepted'),
+        ('objected', 'Accepted With Objections'),
+        ('rejected', 'Rejected'),
+    ], string='SUNAT DTE status', copy=False, tracking=True, help="""Status of sending the DTE to the SUNAT:
+    - Ask For Status: The DTE is asking for its status to the SUNAT.
+    - Accepted: The DTE has been accepted by SUNAT.
+    - Accepted With Objections: The DTE has been accepted with objections by SUNAT.
+    - Rejected: The DTE has been rejected by SUNAT.""")
+    l10n_pe_edi_pse_void_status = fields.Selection([
+        ('ask_for_status', 'Ask For Status'),
+        ('accepted', 'Accepted'),
+        ('objected', 'Accepted With Objections'),
+        ('rejected', 'Rejected'),
+    ], string='SUNAT DTE status', copy=False, tracking=True, help="""Status of sending the DTE to the SUNAT:
+    - Ask For Status: The DTE is asking for its status to the SUNAT.
+    - Accepted: The DTE has been accepted by SUNAT.
+    - Accepted With Objections: The DTE has been accepted with objections by SUNAT.
+    - Rejected: The DTE has been rejected by SUNAT.""")
     l10n_pe_edi_accepted_by_sunat = fields.Boolean(string='EDI Accepted by Sunat', copy=False)
     l10n_pe_edi_void_accepted_by_sunat = fields.Boolean(string='Void EDI Accepted by Sunat', copy=False)
     l10n_pe_edi_rectification_ref_type = fields.Many2one('l10n_latam.document.type', string='Rectification - Invoice Type')
