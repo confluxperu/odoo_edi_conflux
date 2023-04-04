@@ -89,6 +89,10 @@ class AccountMove(models.Model):
                 'l10n_pe_edi_payment_fee_ids': invoice_date_due_vals_list
             })
 
+    def _retry_edi_documents_error_hook(self):
+        for move in self.filtered(lambda m: m.l10n_pe_edi_pse_uid and m.l10n_pe_edi_pse_status=='ask_for_status'):
+            move.edi_document_ids.filtered(lambda d: d.state in ('sent')).write({'state': 'to_send'})
+
     def button_cancel(self):
         pe_edi_format = self.env.ref('l10n_pe_edi_pse_factura.edi_pe_pse')
         if pe_edi_format._is_required_for_invoice(self) and self.is_sale_document() and self.l10n_pe_edi_pse_uid and not self.l10n_pe_edi_pse_cancel_uid:
