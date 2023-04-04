@@ -392,10 +392,10 @@ class AccountEdiFormat(models.Model):
 
         extra_msg = ''
         edi_status = 'ask_for_status'
-        if result.get('enlace_del_xml', False):
+        '''if result.get('enlace_del_xml', False):
             xml_url = result['enlace_del_xml']
         if result.get('enlace_del_pdf', False):
-            pdf_url = result['enlace_del_pdf']
+            pdf_url = result['enlace_del_pdf']'''
         if result.get('emision_aceptada', False):
             edi_status = 'accepted'
             if result.get('enlace_del_cdr', False):
