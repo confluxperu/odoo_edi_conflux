@@ -406,7 +406,6 @@ class AccountEdiFormat(models.Model):
             
         return {
             'success':True,
-            'uid':result['success']['data']['uid'],
             'xml_url':xml_url,
             'pdf_url':pdf_url,
             'cdr_url':cdr_url,
