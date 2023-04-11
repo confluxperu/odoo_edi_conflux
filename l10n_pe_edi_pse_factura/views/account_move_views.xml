@@ -7,9 +7,9 @@
             <field name="inherit_id" ref="account.view_move_form"/>
             <field name="arch" type="xml">
                 <div class="oe_button_box" position="inside">
-                    <button class="text-warning" icon="fa-edit" attrs="{'invisible':['|', '|', '|', ('edi_state','!=','sent'),('l10n_pe_edi_pse_status','in',('rejected','accepted','objected')),('l10n_pe_edi_pse_uid','=',False),('state', '=', 'draft')]}" name="action_retry_edi_documents_error" type="object">
+                    <button class="text-warning" icon="fa-refresh" attrs="{'invisible':['|', '|', '|', ('edi_state','!=','sent'),('l10n_pe_edi_pse_status','in',('rejected','accepted','objected')),('l10n_pe_edi_pse_uid','=',False),('state', '=', 'draft')]}" name="action_retry_edi_documents_error" type="object">
                         <div class="o_stat_info">
-                            <span class="o_stat_text">Get Status</span>
+                            <span class="o_stat_text">Get Status in</span>
                             <span class="o_stat_text">SUNAT</span>
                         </div>
                     </button>

@@ -60,6 +60,9 @@ def request_json(token="", method="post", url=None, data_dict=None):
 class AccountEdiFormat(models.Model):
     _inherit = 'account.edi.format'
 
+    def _is_enabled_by_default_on_journal(self, journal):
+        return True if self.code != 'pe_pse' else False
+
     @api.model
     def _l10n_pe_edi_pse_create_attachment(self, documents):
         attachment = self.env['ir.attachment']
