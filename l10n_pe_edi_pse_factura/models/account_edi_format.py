@@ -520,19 +520,20 @@ class AccountEdiFormat(models.Model):
         # Chatter.
         message = _("Cancellation is in progress in the government side (Void identifier: %s).", html_escape(res['void_uid']))
         if res.get('xml_document'):
-            void_attachment = self.env['ir.attachment'].create({
+            '''void_attachment = self.env['ir.attachment'].create({
                 'type': 'binary',
                 'name': 'VOID-%s.xml' % void_filename,
                 'datas': base64.encodebytes(res['xml_document']),
                 'mimetype': 'application/xml',
-            })
+            })'''
             invoice.with_context(no_new_invoice=True).message_post(
                 body=message,
-                attachment_ids=void_attachment.ids,
+                #attachment_ids=void_attachment.ids,
             )
 
         invoice.write({'l10n_pe_edi_pse_cancel_uid': res['void_uid']})
-        return {invoice: {'error': message, 'blocking_level': 'info'}}
+        #return {invoice: {'error': message, 'blocking_level': 'info'}}
+        return {invoice: {'success': True}}
 
     def _l10n_pe_edi_pse_cancel_invoice_edi_step_2(self, invoice):
         self.ensure_one()
