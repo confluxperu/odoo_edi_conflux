@@ -492,7 +492,7 @@ class AccountEdiFormat(models.Model):
                 error_message = result['message']
             return {'error': error_message, 'blocking_level': 'error'}
 
-        if result.get('emision_rechazada', False):
+        if result.get('baja_rechazada', False):
             return {'error': _('The EDI document failed to be cancelled'), 'blocking_level': 'error'}
 
         return {'success': True, 'cdr': 'CDR-NO-DISPONIBLE'}
