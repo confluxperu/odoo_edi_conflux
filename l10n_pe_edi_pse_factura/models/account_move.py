@@ -22,7 +22,7 @@ class AccountMove(models.Model):
         ('accepted', 'Accepted'),
         ('objected', 'Accepted With Objections'),
         ('rejected', 'Rejected'),
-    ], string='SUNAT DTE status', copy=False, tracking=True, help="""Status of sending the DTE to the SUNAT:
+    ], string='SUNAT DTE Void status', copy=False, tracking=True, help="""Status of sending the DTE to the SUNAT:
     - Ask For Status: The DTE is asking for its status to the SUNAT.
     - Accepted: The DTE has been accepted by SUNAT.
     - Accepted With Objections: The DTE has been accepted with objections by SUNAT.
