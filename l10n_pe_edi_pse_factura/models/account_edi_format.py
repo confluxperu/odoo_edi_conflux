@@ -394,10 +394,6 @@ class AccountEdiFormat(models.Model):
 
         extra_msg = ''
         edi_status = 'ask_for_status'
-        '''if result.get('enlace_del_xml', False):
-            xml_url = result['enlace_del_xml']
-        if result.get('enlace_del_pdf', False):
-            pdf_url = result['enlace_del_pdf']'''
         if result.get('emision_aceptada', False):
             edi_status = 'accepted'
             if result.get('enlace_del_cdr', False):
@@ -475,7 +471,10 @@ class AccountEdiFormat(models.Model):
             return {'error': error_message, 'blocking_level': 'error'}
 
         void_uid = 'VOID-%s' % invoice.l10n_pe_edi_pse_uid
-        return {'void_uid': void_uid}
+
+        edi_void_status = 'ask_for_status'
+
+        return {'void_uid': void_uid, 'pse_void_status':edi_void_status}
 
     def _l10n_pe_edi_pse_cancel_invoices_step_2_conflux(self, company, invoice):
         try:
@@ -492,10 +491,15 @@ class AccountEdiFormat(models.Model):
                 error_message = result['message']
             return {'error': error_message, 'blocking_level': 'error'}
 
+        
+        edi_void_status = 'ask_for_status'
+        if result.get('baja_aceptada', False):
+            edi_void_status = 'accepted'
         if result.get('baja_rechazada', False):
-            return {'error': _('The EDI document failed to be cancelled'), 'blocking_level': 'error'}
+            extra_msg = _('The EDI document failed to be cancelled')
+            edi_void_status = 'rejected'
 
-        return {'success': True, 'cdr': 'CDR-NO-DISPONIBLE'}
+        return {'success': True, 'cdr': 'CDR-NO-DISPONIBLE','pse_void_status':edi_void_status,'extra_msg': extra_msg}
 
     def _l10n_pe_edi_pse_cancel_invoice_edi_step_1(self, invoice):
         self.ensure_one()
@@ -531,7 +535,7 @@ class AccountEdiFormat(models.Model):
                 #attachment_ids=void_attachment.ids,
             )
 
-        invoice.write({'l10n_pe_edi_pse_cancel_uid': res['void_uid']})
+        invoice.write({'l10n_pe_edi_pse_cancel_uid': res['void_uid'], 'l10n_pe_edi_pse_void_status':res['pse_void_status']})
         #return {invoice: {'error': message, 'blocking_level': 'info'}}
         return {invoice: {'success': True}}
 
@@ -553,6 +557,8 @@ class AccountEdiFormat(models.Model):
         invoice.with_context(no_new_invoice=True).message_post(
             body=message,
         )
+        if res.get('pse_void_status', False):
+            invoice.write({'l10n_pe_edi_pse_void_status':res['pse_void_status']})
         return {invoice: {'success': True}}
 
     # -------------------------------------------------------------------------
