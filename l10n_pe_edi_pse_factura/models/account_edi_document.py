@@ -24,5 +24,5 @@ class AccountEdiDocument(models.Model):
     @api.model
     def _cron_process_documents_web_services(self, job_count=None):
         super()._cron_process_documents_web_services(job_count=job_count)
-        edi_documents = self.search([('state', 'in', ('to_cancel')), ('move_id.state', '=', 'cancel')])
+        edi_documents = self.search([('state', 'in', ('to_cancel',)), ('move_id.state', '=', 'cancel')])
         edi_documents._process_documents_web_services(job_count=job_count)
