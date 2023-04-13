@@ -491,7 +491,7 @@ class AccountEdiFormat(models.Model):
                 error_message = result['message']
             return {'error': error_message, 'blocking_level': 'error'}
 
-        
+        extra_msg = ''
         edi_void_status = 'ask_for_status'
         if result.get('baja_aceptada', False):
             edi_void_status = 'accepted'
