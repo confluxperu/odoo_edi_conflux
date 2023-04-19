@@ -125,6 +125,7 @@ class AccountEdiFormat(models.Model):
                                 + (record.partner_id.city_id and ', ' + record.partner_id.city_id.name or '') \
                                 + (record.partner_id.state_id and ', ' + record.partner_id.state_id.name or '') \
                                 + (record.partner_id.country_id and ', ' + record.partner_id.country_id.name or ''),
+            "cliente_email": record.partner_id.email if record.partner_id.email else '',
             "fecha_de_emision": base_dte.get('certificate_date').strftime('%Y-%m-%d'),
             "tipo_de_operacion": record.l10n_pe_edi_operation_type,
             "tipo_de_comprobante": record.l10n_latam_document_type_id.code,
