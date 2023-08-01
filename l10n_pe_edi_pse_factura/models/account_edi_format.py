@@ -261,12 +261,12 @@ class AccountEdiFormat(models.Model):
         if descuento_importe_02>0:
             conflux_dte["descuento_tipo"]="02"
             conflux_dte["descuento_base"]=descuento_base
-            conflux_dte["descuento_importe"]=descuento_importe_02/conflux_dte["descuento_base"]
+            conflux_dte["descuento_importe"]=descuento_importe_02
         
         if descuento_importe_03>0:
             conflux_dte["descuento_tipo"]="03"
             conflux_dte["descuento_base"]=descuento_base
-            conflux_dte["descuento_importe"]=descuento_importe_03/conflux_dte["descuento_base"]
+            conflux_dte["descuento_importe"]=descuento_importe_03
 
 
         if record.l10n_latam_document_type_id.code=='07':
