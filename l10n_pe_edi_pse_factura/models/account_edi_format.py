@@ -181,7 +181,7 @@ class AccountEdiFormat(models.Model):
             for invoice_line in base_dte.get('invoice_line_vals_list', []):
                 line = invoice_line.get('line')
                 invoice_line['tax_details'] = base_dte['tax_details']['invoice_line_tax_details'][line]['tax_details'].values()
-                if line.price_subtotal<0 and line.l10n_pe_edi_allowance_charge_reason_code=='02':
+                if line.price_subtotal<0 and line.l10n_pe_edi_allowance_charge_reason_code in ('02','00'):
                     descuento_importe_02+=abs(line.price_subtotal)
                     continue
                 if line.price_subtotal<0 and line.l10n_pe_edi_allowance_charge_reason_code=='03':
