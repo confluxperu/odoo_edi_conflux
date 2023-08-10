@@ -51,6 +51,10 @@
                     <field name="l10n_pe_edi_pse_cancel_uid" readonly="1"/>
                     <field name="l10n_pe_edi_accepted_by_sunat" invisible="1"/>
                     <field name="l10n_pe_edi_void_accepted_by_sunat" invisible="1"/>
+                    <field name="l10n_pe_edi_xml_file_link" widget="url"/>
+                    <field name="l10n_pe_edi_pdf_file_link" widget="url"/>
+                    <field name="l10n_pe_edi_cdr_file_link" widget="url"/>
+                    <field name="l10n_pe_edi_cdr_void_file_link" widget="url"/>
                 </xpath>
                 <xpath expr="//field[@name='l10n_pe_edi_charge_reason']" position="after">
                     <field name="l10n_pe_edi_rectification_ref_type" attrs="{'readonly': [('state', '!=', 'draft')], 'invisible': [('l10n_pe_edi_refund_reason', '=', False),('l10n_pe_edi_charge_reason', '=', False)]}"/>

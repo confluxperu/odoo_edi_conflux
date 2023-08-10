@@ -317,8 +317,8 @@ class AccountEdiFormat(models.Model):
 
         return conflux_dte
 
-    def _l10n_pe_edi_sign_invoices_conflux(self, invoice):
-        if(invoice.l10n_pe_edi_pse_uid):
+    def _l10n_pe_edi_sign_invoices_conflux(self, invoice, edi_filename):
+        if invoice.l10n_pe_edi_pse_uid:
             service_iap = self._l10n_pe_edi_sign_service_step_2_conflux(
                 invoice.company_id, invoice.l10n_pe_edi_pse_uid)
         else:
@@ -333,26 +333,39 @@ class AccountEdiFormat(models.Model):
             update_invoice['l10n_pe_edi_pse_status'] = service_iap.get('pse_status')
         if service_iap.get('uid', False):
             update_invoice['l10n_pe_edi_pse_uid'] = service_iap.get('uid')
+        if not invoice.l10n_pe_edi_pse_uid:
+            if service_iap.get('xml_url'):
+                attachment_xml_id = self._l10n_pe_edi_pse_create_attachment([('%s.xml' % edi_filename, service_iap['xml_url'])])
+                update_invoice['l10n_pe_edi_xml_file'] = attachment_xml_id
+                service_iap['xml_attachment_id'] = attachment_xml_id
+            if service_iap.get('pdf_url'):
+                attachment_pdf_id = self._l10n_pe_edi_pse_create_attachment([('%s.pdf' % edi_filename, service_iap['pdf_url'])])
+                update_invoice['l10n_pe_edi_pdf_file'] = attachment_pdf_id
+        if update_invoice['l10n_pe_edi_pse_status'] in ('accepted','objected'):
+            if service_iap.get('cdr_url'):
+                attachment_cdr_id = self._l10n_pe_edi_pse_create_attachment([('CDR-%s.xml' % edi_filename, service_iap['cdr_url'])])
+                update_invoice['l10n_pe_edi_cdr_file'] = attachment_cdr_id
         if update_invoice:
             invoice.write(update_invoice)
         return service_iap
     
     def _l10n_pe_edi_post_invoice_web_service_pse(self, invoice, edi_filename):
         provider = invoice.company_id.l10n_pe_edi_provider
-        res = getattr(self, '_l10n_pe_edi_sign_invoices_%s' % provider)(invoice)
+        res = getattr(self, '_l10n_pe_edi_sign_invoices_%s' % provider)(invoice, edi_filename)
 
         if res.get('error'):
             return res
 
         # Chatter.
+        documents_xml = []
         documents = []
-        if res.get('xml_url'):
-            documents.append(('%s.xml' % edi_filename, res['xml_url']))
+        '''if res.get('xml_url'):
+            documents_xml.append(('%s.xml' % edi_filename, res['xml_url']))
         if res.get('cdr_url'):
             documents.append(('CDR-%s.xml' % edi_filename, res['cdr_url']))
         if res.get('pdf_url'):
-            documents.append(('%s.pdf' % edi_filename, res['pdf_url']))
-        if documents:
+            documents.append(('%s.pdf' % edi_filename, res['pdf_url']))'''
+        if res.get('xml_attachment_id'):
             '''zip_edi_str = self._l10n_pe_edi_zip_edi_document(documents)
             res['attachment'] = self.env['ir.attachment'].create({
                 'res_model': invoice._name,
@@ -362,12 +375,14 @@ class AccountEdiFormat(models.Model):
                 'datas': base64.encodebytes(zip_edi_str),
                 'mimetype': 'application/zip',
             })'''
+            #edit_attachment_xml_id = self._l10n_pe_edi_pse_create_attachment(documents_xml)
+            res['attachment'] = self.env['ir.attachment'].browse(res['xml_attachment_id'])
 
-            edi_attachment_ids = self._l10n_pe_edi_pse_create_attachment(documents)
+            #edi_attachment_ids = self._l10n_pe_edi_pse_create_attachment(documents+edit_attachment_xml_id)
             message = _("The EDI document was successfully created and signed by the government.")
             invoice.with_context(no_new_invoice=True).message_post(
                 body=message,
-                attachment_ids=edi_attachment_ids,
+                #attachment_ids=edi_attachment_ids,
             )
 
         return res
