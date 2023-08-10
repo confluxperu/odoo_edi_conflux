@@ -345,7 +345,6 @@ class AccountEdiFormat(models.Model):
             if service_iap.get('cdr_url'):
                 attachment_cdr_id = self._l10n_pe_edi_pse_create_attachment([('CDR-%s.xml' % edi_filename, service_iap['cdr_url'])])
                 update_invoice['l10n_pe_edi_cdr_file'] = attachment_cdr_id[0]
-        log.info(update_invoice)
         if update_invoice:
             invoice.write(update_invoice)
         return service_iap
