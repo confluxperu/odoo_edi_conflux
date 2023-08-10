@@ -336,15 +336,16 @@ class AccountEdiFormat(models.Model):
         if not invoice.l10n_pe_edi_pse_uid:
             if service_iap.get('xml_url'):
                 attachment_xml_id = self._l10n_pe_edi_pse_create_attachment([('%s.xml' % edi_filename, service_iap['xml_url'])])
-                update_invoice['l10n_pe_edi_xml_file'] = attachment_xml_id
-                service_iap['xml_attachment_id'] = attachment_xml_id
+                update_invoice['l10n_pe_edi_xml_file'] = attachment_xml_id[0]
+                service_iap['xml_attachment_id'] = update_invoice['l10n_pe_edi_xml_file']
             if service_iap.get('pdf_url'):
                 attachment_pdf_id = self._l10n_pe_edi_pse_create_attachment([('%s.pdf' % edi_filename, service_iap['pdf_url'])])
-                update_invoice['l10n_pe_edi_pdf_file'] = attachment_pdf_id
+                update_invoice['l10n_pe_edi_pdf_file'] = attachment_pdf_id[0]
         if update_invoice['l10n_pe_edi_pse_status'] in ('accepted','objected'):
             if service_iap.get('cdr_url'):
                 attachment_cdr_id = self._l10n_pe_edi_pse_create_attachment([('CDR-%s.xml' % edi_filename, service_iap['cdr_url'])])
-                update_invoice['l10n_pe_edi_cdr_file'] = attachment_cdr_id
+                update_invoice['l10n_pe_edi_cdr_file'] = attachment_cdr_id[0]
+        log.info(update_invoice)
         if update_invoice:
             invoice.write(update_invoice)
         return service_iap
