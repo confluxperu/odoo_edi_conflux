@@ -341,7 +341,7 @@ class AccountEdiFormat(models.Model):
             if service_iap.get('pdf_url'):
                 attachment_pdf_id = self._l10n_pe_edi_pse_create_attachment([('%s.pdf' % edi_filename, service_iap['pdf_url'])])
                 update_invoice['l10n_pe_edi_pdf_file'] = attachment_pdf_id[0]
-        if update_invoice['l10n_pe_edi_pse_status'] in ('accepted','objected'):
+        if update_invoice.get('l10n_pe_edi_pse_status', False) in ('accepted','objected'):
             if service_iap.get('cdr_url'):
                 attachment_cdr_id = self._l10n_pe_edi_pse_create_attachment([('CDR-%s.xml' % edi_filename, service_iap['cdr_url'])])
                 update_invoice['l10n_pe_edi_cdr_file'] = attachment_cdr_id[0]
