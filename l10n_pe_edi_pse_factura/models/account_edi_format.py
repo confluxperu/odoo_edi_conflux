@@ -61,15 +61,12 @@ class AccountEdiFormat(models.Model):
 
     def _check_move_configuration(self, move):
         # OVERRIDE
-        res = super()._check_move_configuration(move)
-        if self.code != 'pe_pse':
-            return res
-
+        res = []
         if not move.company_id.vat:
             res.append(_("VAT number is missing on company %s") % move.company_id.display_name)
         if not move.commercial_partner_id.vat:
             res.append(_("VAT number is missing on partner %s") % move.commercial_partner_id.display_name)
-        lines = move.invoice_line_ids.filtered(lambda line: not line.display_type)
+        #lines = move.invoice_line_ids.filtered(lambda line: not line.display_type)
         '''for line in lines:
             taxes = line.tax_ids
             if len(taxes) > 1 and len(taxes.filtered(lambda t: t.tax_group_id.l10n_pe_edi_code == 'IGV')) > 1:
