@@ -59,6 +59,26 @@ def request_json(token="", method="post", url=None, data_dict=None):
 class AccountEdiFormat(models.Model):
     _inherit = 'account.edi.format'
 
+    def _check_move_configuration(self, move):
+        # OVERRIDE
+        res = super()._check_move_configuration(move)
+        if self.code != 'pe_ubl_2_1':
+            return res
+
+        if not move.company_id.vat:
+            res.append(_("VAT number is missing on company %s") % move.company_id.display_name)
+        if not move.commercial_partner_id.vat:
+            res.append(_("VAT number is missing on partner %s") % move.commercial_partner_id.display_name)
+        lines = move.invoice_line_ids.filtered(lambda line: not line.display_type)
+        '''for line in lines:
+            taxes = line.tax_ids
+            if len(taxes) > 1 and len(taxes.filtered(lambda t: t.tax_group_id.l10n_pe_edi_code == 'IGV')) > 1:
+                res.append(_("You can't have more than one IGV tax per line to generate a legal invoice in Peru"))
+        if any(not line.tax_ids for line in move.invoice_line_ids if not line.display_type):
+            res.append(_("Taxes need to be assigned on all invoice lines"))'''
+
+        return res
+
     def _is_enabled_by_default_on_journal(self, journal):
         return True if self.code == 'pe_pse' else False
 
