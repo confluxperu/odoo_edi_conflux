@@ -62,7 +62,7 @@ class AccountEdiFormat(models.Model):
     def _check_move_configuration(self, move):
         # OVERRIDE
         res = super()._check_move_configuration(move)
-        if self.code != 'pe_ubl_2_1':
+        if self.code != 'pe_pse':
             return res
 
         if not move.company_id.vat:
