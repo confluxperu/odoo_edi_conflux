@@ -62,6 +62,10 @@
                     <field name="l10n_pe_edi_rectification_ref_date" attrs="{'readonly': [('state', '!=', 'draft')], 'invisible': [('move_type', '!=', 'out_refund')]}"/>
                 </xpath>
 
+                <field name="l10n_pe_edi_refund_reason" position="attributes">
+                    <attribute name="attrs">{'readonly': [('state', '!=', 'draft')], 'invisible': [('move_type', '!=', 'out_refund')]}</attribute>
+                </field>
+
                 <xpath expr="//page[@name='l10n_pe_edi']" position="inside">
                     <group string="Credit Installments" name="payment_fee_group">
                         <field name="l10n_pe_edi_payment_fee_ids" attrs="{'readonly': [('state', '!=', 'draft')]}">
