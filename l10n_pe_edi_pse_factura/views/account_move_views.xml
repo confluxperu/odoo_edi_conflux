@@ -57,9 +57,9 @@
                     <field name="l10n_pe_edi_cdr_void_file_link" widget="url"/>
                 </xpath>
                 <xpath expr="//field[@name='l10n_pe_edi_charge_reason']" position="after">
-                    <field name="l10n_pe_edi_rectification_ref_type" attrs="{'readonly': [('state', '!=', 'draft')], 'invisible': [('l10n_pe_edi_refund_reason', '=', False),('l10n_pe_edi_charge_reason', '=', False)]}"/>
-                    <field name="l10n_pe_edi_rectification_ref_number" attrs="{'readonly': [('state', '!=', 'draft')], 'invisible': [('l10n_pe_edi_refund_reason', '=', False),('l10n_pe_edi_charge_reason', '=', False)]}"/>
-                    <field name="l10n_pe_edi_rectification_ref_date" attrs="{'readonly': [('state', '!=', 'draft')], 'invisible': [('l10n_pe_edi_refund_reason', '=', False),('l10n_pe_edi_charge_reason', '=', False)]}"/>
+                    <field name="l10n_pe_edi_rectification_ref_type" attrs="{'readonly': [('state', '!=', 'draft')], 'invisible': [('move_type', '!=', 'out_refund')]}"/>
+                    <field name="l10n_pe_edi_rectification_ref_number" attrs="{'readonly': [('state', '!=', 'draft')], 'invisible': [('move_type', '!=', 'out_refund')]}"/>
+                    <field name="l10n_pe_edi_rectification_ref_date" attrs="{'readonly': [('state', '!=', 'draft')], 'invisible': [('move_type', '!=', 'out_refund')]}"/>
                 </xpath>
 
                 <xpath expr="//page[@name='l10n_pe_edi']" position="inside">
