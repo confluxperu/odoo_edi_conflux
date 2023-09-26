@@ -1,0 +1,12 @@
+<odoo>
+    <record id="view_order_form" model="ir.ui.view">
+        <field name="name">sale.order.form.form.l10n_pe_edi_despatch_carrier</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form" />
+        <field name="arch" type="xml">
+            <button name="action_cancel" position="after">
+                <button name="action_generate_despatch" states="sale" type="object" string="Generar G.Remitente" />
+            </button>
+        </field>
+    </record>
+</odoo>

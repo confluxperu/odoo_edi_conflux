@@ -1,0 +1,69 @@
+<odoo>
+    <record id="view_logistic_despatch_form_edi_carrier" model="ir.ui.view">
+        <field name="name">view.logistic.despatch.form.l10n_pe_edi_despatch_carrier</field>
+        <field name="model">logistic.despatch</field>
+        <field name="inherit_id" ref="logistic.view_logistic_despatch_form" />
+        <field name="arch" type="xml">
+            <field name="partner_id" position="attributes">
+                <attribute name="attrs">{'invisible':[('l10n_pe_edi_type','=','31')], 'string':'Receptor'}</attribute>
+            </field>
+            <field name="partner_id" position="before">
+                <field name="l10n_pe_edi_type"/>
+            </field>
+            <field name="partner_id" position="after">
+                <field name="partner_id" string="Remitente" attrs="{'invisible':[('l10n_pe_edi_type','!=','31')]}"/>
+                <field name="l10n_pe_edi_receiver_id" attrs="{'invisible':[('l10n_pe_edi_type','!=','31')]}"/>
+            </field>
+            <field name="l10n_pe_edi_shipment_reason" position="attributes">
+                <attribute name="attrs">{'invisible':[('l10n_pe_edi_type','=','31')]}</attribute>
+            </field>
+            <field name="l10n_pe_edi_transport_mode" position="attributes">
+                <attribute name="attrs">{'invisible':[('l10n_pe_edi_type','=','31')]}</attribute>
+            </field>
+            <field name="start_date" position="attributes">
+                <attribute name="attrs">{'invisible':[('l10n_pe_edi_type','=','31')]}</attribute>
+            </field>
+            <field name="l10n_pe_edi_invoice_number" position="attributes">
+                <attribute name="attrs">{'invisible':[('l10n_pe_edi_type','=','31')]}</attribute>
+            </field>
+            <field name="carrier_id" position="attributes">
+                <attribute name="attrs">{'invisible':[('l10n_pe_edi_type','=','31')]}</attribute>
+            </field>
+            <field name="l10n_pe_edi_mtc_authorization" position="attributes">
+                <attribute name="attrs">{'invisible':[('l10n_pe_edi_type','=','31')]}</attribute>
+            </field>
+            <field name="l10n_pe_edi_seller_supplier_id" position="attributes">
+                <attribute name="attrs">{'invisible':[('l10n_pe_edi_type','=','31')]}</attribute>
+            </field>
+            <field name="l10n_pe_edi_buyer_id" position="attributes">
+                <attribute name="attrs">{'invisible':[('l10n_pe_edi_type','=','31')]}</attribute>
+            </field>
+            <field name="packages" position="attributes">
+                <attribute name="attrs">{'invisible':[('l10n_pe_edi_type','=','31')]}</attribute>
+            </field>
+            <field name="total_weight" position="before">
+                <field name="l10n_pe_edi_subcontractor_id" attrs="{'invisible':[('l10n_pe_edi_type','!=','31')]}"/>
+                <field name="l10n_pe_edi_freight_payer_id" attrs="{'invisible':[('l10n_pe_edi_type','!=','31')]}"/>
+            </field>
+            <field name="vehicle_id" position="after">
+                <field name="l10n_pe_edi_vehicle_tuc" attrs="{'invisible':[('l10n_pe_edi_type','!=','31')]}"/>
+            </field>
+            <field name="l10n_pe_edi_vehicle_2" position="after">
+                <field name="l10n_pe_edi_vehicle_2_tuc" attrs="{'invisible':[('l10n_pe_edi_type','!=','31')]}"/>
+            </field>
+            <field name="l10n_pe_edi_vehicle_3" position="after">
+                <field name="l10n_pe_edi_vehicle_3_tuc" attrs="{'invisible':[('l10n_pe_edi_type','!=','31')]}"/>
+            </field>
+            <field name="l10n_pe_edi_transport_event_type" position="after">
+                <field name="l10n_pe_edi_is_subcontracted_transport" attrs="{'invisible':[('l10n_pe_edi_type','!=','31')]}"/>
+                <field name="l10n_pe_edi_is_sender_freight_payer" attrs="{'invisible':[('l10n_pe_edi_type','!=','31')]}"/>
+                <field name="l10n_pe_edi_is_subcontractor_freight_payer" attrs="{'invisible':[('l10n_pe_edi_type','!=','31')]}"/>
+                <field name="l10n_pe_edi_is_third_party_freight_payer" attrs="{'invisible':[('l10n_pe_edi_type','!=','31')]}"/>
+            </field>
+            <field name="note" position="before">
+                <label for="l10n_pe_edi_despatch_description" string="Detalle de Guia"  attrs="{'invisible':[('l10n_pe_edi_type','!=','31')]}"/>
+                <field name="l10n_pe_edi_despatch_description" attrs="{'invisible':[('l10n_pe_edi_type','!=','31')]}" />
+            </field>
+        </field>
+    </record>
+</odoo>

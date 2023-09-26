@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 from odoo import api, fields, models
+import logging
+log = logging.getLogger(__name__)
 
 class AccountMove(models.Model):
     _inherit = 'account.move'
@@ -111,6 +113,34 @@ class AccountMove(models.Model):
             move.edi_document_ids.filtered(lambda d: d.state in ('sent')).write({'state': 'to_send'})
         for move in self.filtered(lambda m: m.l10n_pe_edi_pse_cancel_uid and (m.l10n_pe_edi_pse_void_status=='ask_for_status')):
             move.edi_document_ids.filtered(lambda d: d.state in ('cancelled')).write({'state': 'to_cancel'})
+
+    def _l10n_pe_edi_get_extra_report_values(self):
+        self.ensure_one()
+
+        # Parse the edi document.
+        edi_attachment_zipped = self._get_edi_attachment(self.env.ref('l10n_pe_edi_pse_factura.edi_pe_pse'))
+        if not edi_attachment_zipped:
+            res = super()._l10n_pe_edi_get_extra_report_values()
+            return res
+
+        serie_folio = self._l10n_pe_edi_get_serie_folio()
+        qr_code_values = [
+            self.company_id.vat,
+            self.company_id.partner_id.l10n_latam_identification_type_id.l10n_pe_vat_code,
+            serie_folio['serie'],
+            serie_folio['folio'],
+            str(self.amount_tax),
+            str(self.amount_total),
+            fields.Date.to_string(self.date),
+            self.partner_id.l10n_latam_identification_type_id.l10n_pe_vat_code,
+            self.commercial_partner_id.vat or '00000000',
+            ''
+        ]
+
+        return {
+            'qr_str': '|'.join(qr_code_values) + '|\r\n',
+            'amount_to_text': self._l10n_pe_edi_amount_to_text(),
+        }
 
     def button_cancel(self):
         pe_edi_format = self.env.ref('l10n_pe_edi_pse_factura.edi_pe_pse')

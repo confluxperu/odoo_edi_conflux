@@ -336,7 +336,9 @@ class AccountEdiFormat(models.Model):
 
         return conflux_dte
 
-    def _l10n_pe_edi_sign_invoices_conflux(self, invoice, edi_filename):
+    def _l10n_pe_edi_sign_invoices_conflux(self, invoice, edi_filename, edi_str=''):
+        if self.code != 'pe_pse':
+            return {'error': 'Para envio a SUNAT mediante PSE el diario debe tener tener activo el campo Facturacion Electronica como "Peru PSE"', 'blocking_level': 'warning'}
         if invoice.l10n_pe_edi_pse_uid:
             service_iap = self._l10n_pe_edi_sign_service_step_2_conflux(
                 invoice.company_id, invoice.l10n_pe_edi_pse_uid)
