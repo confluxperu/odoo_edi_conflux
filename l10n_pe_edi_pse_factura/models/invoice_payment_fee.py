@@ -6,6 +6,7 @@ log = logging.getLogger(__name__)
 
 class AccountMovePaymentFee(models.Model):
     _name = 'account.move.l10n_pe_payment_fee'
+    _description = 'Account Move Payment Fee'
 
     @api.model
     def _get_default_currency(self):

@@ -6,6 +6,7 @@ log = logging.getLogger(__name__)
 
 class AccountInvoiceTransportReferences(models.Model):
     _name = 'account.move.l10n_pe_transportref'
+    _description = 'Account Move Transport Ref'
 
     move_id = fields.Many2one(
         'account.move', string='Invoice', ondelete='cascade', index=True)

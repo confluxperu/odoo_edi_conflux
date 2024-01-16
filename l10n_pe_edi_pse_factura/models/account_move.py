@@ -9,6 +9,27 @@ class AccountMove(models.Model):
 
     l10n_pe_edi_pse_uid = fields.Char(string='PSE Unique identifier', copy=False)
     l10n_pe_edi_pse_cancel_uid = fields.Char(string='PSE Identifier for Cancellation', copy=False)
+    l10n_pe_edi_pse_attachment_ids = fields.Many2many('ir.attachment', string='EDI Attachments')
+    l10n_pe_edi_pse_status = fields.Selection([
+        ('ask_for_status', 'Ask For Status'),
+        ('accepted', 'Accepted'),
+        ('objected', 'Accepted With Objections'),
+        ('rejected', 'Rejected'),
+    ], string='SUNAT DTE status', copy=False, tracking=True, help="""Status of sending the DTE to the SUNAT:
+    - Ask For Status: The DTE is asking for its status to the SUNAT.
+    - Accepted: The DTE has been accepted by SUNAT.
+    - Accepted With Objections: The DTE has been accepted with objections by SUNAT.
+    - Rejected: The DTE has been rejected by SUNAT.""")
+    l10n_pe_edi_pse_void_status = fields.Selection([
+        ('ask_for_status', 'Ask For Status'),
+        ('accepted', 'Accepted'),
+        ('objected', 'Accepted With Objections'),
+        ('rejected', 'Rejected'),
+    ], string='SUNAT DTE Void status', copy=False, tracking=True, help="""Status of sending the DTE to the SUNAT:
+    - Ask For Status: The DTE is asking for its status to the SUNAT.
+    - Accepted: The DTE has been accepted by SUNAT.
+    - Accepted With Objections: The DTE has been accepted with objections by SUNAT.
+    - Rejected: The DTE has been rejected by SUNAT.""")
     l10n_pe_edi_accepted_by_sunat = fields.Boolean(string='EDI Accepted by Sunat', copy=False)
     l10n_pe_edi_void_accepted_by_sunat = fields.Boolean(string='Void EDI Accepted by Sunat', copy=False)
     l10n_pe_edi_rectification_ref_type = fields.Many2one('l10n_latam.document.type', string='Rectification - Invoice Type')
@@ -17,6 +38,23 @@ class AccountMove(models.Model):
     l10n_pe_edi_payment_fee_ids = fields.One2many('account.move.l10n_pe_payment_fee','move_id', string='Credit Payment Fees')
     l10n_pe_edi_transportref_ids = fields.One2many(
         'account.move.l10n_pe_transportref', 'move_id', string='Attached Despatchs', copy=True)
+    
+    l10n_pe_edi_hash = fields.Char(string='DTE Hash', copy=False)
+    l10n_pe_edi_xml_file = fields.Many2one('ir.attachment', string='DTE file', copy=False)
+    l10n_pe_edi_xml_file_link = fields.Char(string='DTE file', compute='_compute_l10n_pe_edi_links')
+    l10n_pe_edi_pdf_file = fields.Many2one('ir.attachment', string='DTE PDF file', copy=False)
+    l10n_pe_edi_pdf_file_link = fields.Char(string='DTE PDF file', compute='_compute_l10n_pe_edi_links')
+    l10n_pe_edi_cdr_file = fields.Many2one('ir.attachment', string='CDR file', copy=False)
+    l10n_pe_edi_cdr_file_link = fields.Char(string='CDR file', compute='_compute_l10n_pe_edi_links')
+    l10n_pe_edi_cdr_void_file = fields.Many2one('ir.attachment', string='CDR Void file', copy=False)
+    l10n_pe_edi_cdr_void_file_link = fields.Char(string='CDR Void file', compute='_compute_l10n_pe_edi_links')
+
+    def _compute_l10n_pe_edi_links(self):
+        for move in self:
+            move.l10n_pe_edi_xml_file_link = move.l10n_pe_edi_xml_file.url if move.l10n_pe_edi_xml_file else None
+            move.l10n_pe_edi_pdf_file_link = move.l10n_pe_edi_pdf_file.url if move.l10n_pe_edi_pdf_file else None
+            move.l10n_pe_edi_cdr_file_link = move.l10n_pe_edi_cdr_file.url if move.l10n_pe_edi_cdr_file else None
+            move.l10n_pe_edi_cdr_void_file_link = move.l10n_pe_edi_cdr_void_file.url if move.l10n_pe_edi_cdr_void_file else None
 
     def _post(self, soft=True):
         res = super(AccountMove, self)._post(soft=soft)
@@ -70,6 +108,50 @@ class AccountMove(models.Model):
             self.write({
                 'l10n_pe_edi_payment_fee_ids': invoice_date_due_vals_list
             })
+    
+    def _l10n_pe_edi_get_extra_report_values(self):
+        self.ensure_one()
+        if not self.l10n_pe_edi_pse_uid:
+            res = super()._l10n_pe_edi_get_extra_report_values()
+            return res
+
+        serie_folio = self._l10n_pe_edi_get_serie_folio()
+        qr_code_values = [
+            self.company_id.vat,
+            self.company_id.partner_id.l10n_latam_identification_type_id.l10n_pe_vat_code,
+            serie_folio['serie'],
+            serie_folio['folio'],
+            str(self.amount_tax),
+            str(self.amount_total),
+            fields.Date.to_string(self.date),
+            self.partner_id.l10n_latam_identification_type_id.l10n_pe_vat_code,
+            self.commercial_partner_id.vat or '00000000',
+            ''
+        ]
+
+        return {
+            'qr_str': '|'.join(qr_code_values) + '|\r\n',
+            'amount_to_text': self._l10n_pe_edi_amount_to_text(),
+        }
+
+    def button_cancel(self):
+        pe_edi_format = self.env.ref('l10n_pe_edi_pse_factura.edi_pe_pse')
+        if self.is_sale_document() and self.l10n_pe_edi_pse_uid and not self.l10n_pe_edi_pse_cancel_uid:
+            cancel_reason = self.l10n_pe_edi_cancel_reason or 'Anulacion'
+            self.write({'l10n_pe_edi_cancel_reason':cancel_reason})
+            self.edi_document_ids.filtered(lambda doc: doc.state == 'to_send').write({'state': 'sent', 'error': False, 'blocking_level': False})
+        res = super().button_cancel()
+        return res
+
+    def button_cancel_posted_moves(self):
+        # OVERRIDE
+        pe_edi_format = self.env.ref('l10n_pe_edi_pse_factura.edi_pe_pse')
+        pe_invoices = self.filtered(pe_edi_format._get_move_applicability)
+        if pe_invoices:
+            cancel_reason_needed = pe_invoices.filtered(lambda move: not move.l10n_pe_edi_cancel_reason)
+            if cancel_reason_needed:
+                return self.env.ref('l10n_pe_edi.action_l10n_pe_edi_cancel').sudo().read()[0]
+        return super().button_cancel_posted_moves()
 
 class AccountMoveLine(models.Model):
     _inherit = 'account.move.line'
