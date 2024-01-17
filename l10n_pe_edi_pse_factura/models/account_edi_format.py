@@ -73,9 +73,14 @@ class AccountEdiFormat(models.Model):
         return attachment_ids
 
     def _l10n_pe_edi_get_edi_values_conflux(self, invoice):
-        base_dte = self._l10n_pe_edi_get_edi_values(invoice)
+        price_precision = self.env['decimal.precision'].precision_get('Product Price')
+        builder = self.env['account.edi.xml.ubl_pe']
+        invoice_vals = builder._export_invoice_vals(invoice)
+        log.info("VERIFICIAR DATA PREVIA A XML")
+        log.info(invoice_vals)
+        base_dte = builder._export_invoice_vals(invoice)
 
-        record = base_dte.get('record')
+        record = base_dte.get('invoice')
 
         invoice_sequence = record.name.replace(' ','').split('-')
         
@@ -97,12 +102,12 @@ class AccountEdiFormat(models.Model):
                                 + (record.partner_id.state_id and ', ' + record.partner_id.state_id.name or '') \
                                 + (record.partner_id.country_id and ', ' + record.partner_id.country_id.name or ''),
             "cliente_email": record.partner_id.email if record.partner_id.email else '',
-            "fecha_de_emision": base_dte.get('certificate_date').strftime('%Y-%m-%d'),
+            "fecha_de_emision": base_dte['vals'].get('issue_date').strftime('%Y-%m-%d'),
             "tipo_de_operacion": record.l10n_pe_edi_operation_type,
             "tipo_de_comprobante": record.l10n_latam_document_type_id.code,
             "serie": dte_serial,
             "numero": dte_number,
-            "forma_de_pago_credito":False if base_dte.get('PaymentMeansID') == 'Contado' else True,
+            "forma_de_pago_credito":False,
             "credito_cuotas":[],
             "moneda": record.currency_id.name,
             #"tipo_de_cambio": round(base_dte.get('currency_rate',1),3),
@@ -123,24 +128,29 @@ class AccountEdiFormat(models.Model):
             "items": []
         }
 
-        for tax_subtotal in base_dte['tax_details_grouped']['tax_details'].values():
-            if tax_subtotal['l10n_pe_edi_code']=='IGV':
-                conflux_dte['total_gravada']+=tax_subtotal['base_amount_currency']
-                conflux_dte['total_igv']+=tax_subtotal['tax_amount_currency']
-            if tax_subtotal['l10n_pe_edi_code']=='EXO':
-                conflux_dte['total_exonerada']+=tax_subtotal['base_amount_currency']
-            if tax_subtotal['l10n_pe_edi_code']=='INA':
-                conflux_dte['total_inafecta']+=tax_subtotal['base_amount_currency']
-            if tax_subtotal['l10n_pe_edi_code']=='GRA':
-                conflux_dte['total_gratuita']+=tax_subtotal['base_amount_currency']
-            if tax_subtotal['l10n_pe_edi_code']=='EXP':
-                conflux_dte['total_exportacion']+=tax_subtotal['base_amount_currency']
-            if tax_subtotal['l10n_pe_edi_code']=='ISC':
-                conflux_dte['total_isc']+=tax_subtotal['tax_amount_currency']
-            if tax_subtotal['l10n_pe_edi_code']=='ICBPER':
-                conflux_dte['total_icbper']+=tax_subtotal['tax_amount_currency']
-            if tax_subtotal['l10n_pe_edi_code']=='OTROS':
-                conflux_dte['total_otros_cargos']+=tax_subtotal['tax_amount_currency']
+        if base_dte['vals'].get('payment_terms_vals', []):
+            for payment_terms in base_dte['vals']['payment_terms_vals']:
+                if payment_terms['payment_means_id'] == 'Credito':
+                    conflux_dte['forma_de_pago_credito'] = True
+        for tax_total in base_dte['vals']['tax_total_vals']:
+            for tax_subtotal in tax_total['tax_subtotal_vals']:
+                if tax_subtotal['tax_category_vals']['tax_scheme_vals']['name']=='IGV':
+                    conflux_dte['total_gravada']+=tax_subtotal['taxable_amount']
+                    conflux_dte['total_igv']+=tax_subtotal['tax_amount']
+                if tax_subtotal['tax_category_vals']['tax_scheme_vals']['name']=='EXO':
+                    conflux_dte['total_exonerada']+=tax_subtotal['taxable_amount']
+                if tax_subtotal['tax_category_vals']['tax_scheme_vals']['name']=='INA':
+                    conflux_dte['total_inafecta']+=tax_subtotal['taxable_amount']
+                if tax_subtotal['tax_category_vals']['tax_scheme_vals']['name']=='GRA':
+                    conflux_dte['total_gratuita']+=tax_subtotal['taxable_amount']
+                if tax_subtotal['tax_category_vals']['tax_scheme_vals']['name']=='EXP':
+                    conflux_dte['total_exportacion']+=tax_subtotal['taxable_amount']
+                if tax_subtotal['tax_category_vals']['tax_scheme_vals']['name']=='ISC':
+                    conflux_dte['total_isc']+=tax_subtotal['tax_amount']
+                if tax_subtotal['tax_category_vals']['tax_scheme_vals']['name']=='ICBPER':
+                    conflux_dte['total_icbper']+=tax_subtotal['tax_amount']
+                if tax_subtotal['tax_category_vals']['tax_scheme_vals']['name']=='OTROS':
+                    conflux_dte['total_otros_cargos']+=tax_subtotal['tax_amount']
         
         conflux_dte['total'] = conflux_dte['total_gravada']+conflux_dte['total_igv']+conflux_dte['total_exonerada']+conflux_dte['total_inafecta']+conflux_dte['total_exportacion']+conflux_dte['total_isc']+conflux_dte['total_icbper']
 
@@ -148,10 +158,9 @@ class AccountEdiFormat(models.Model):
         descuento_importe_03 = 0
         descuento_base = 0
 
-        if base_dte.get('invoice_line_vals_list'):
-            for invoice_line in base_dte.get('invoice_line_vals_list', []):
+        if base_dte['vals'].get('line_vals'):
+            for invoice_line in base_dte['vals'].get('line_vals', []):
                 line = invoice_line.get('line')
-                invoice_line['tax_details'] = base_dte['tax_details']['tax_details_per_record'][line]['tax_details'].values()
                 log.info(invoice_line)
                 if line.price_subtotal<0 and line.l10n_pe_edi_allowance_charge_reason_code in ('02','00'):
                     descuento_importe_02+=abs(line.price_subtotal)
@@ -173,27 +182,28 @@ class AccountEdiFormat(models.Model):
                     isc_amount = 0
                     icbper_amount = 0
 
-                    for tax in invoice_line['tax_details']:
-                        if tax['tax'].tax_group_id.l10n_pe_edi_code == 'IGV':
-                            igv_amount+=tax['tax_amount_currency']
-                        if tax['tax'].tax_group_id.l10n_pe_edi_code == 'ISC':
-                            isc_type = tax['tax'].l10n_pe_edi_affectation_reason
-                            isc_amount+=tax['tax_amount_currency']
-                        if tax['tax'].tax_group_id.l10n_pe_edi_code == 'ICBPER':
-                            icbper_amount+=tax['tax_amount_currency']
-                        if tax['tax'].tax_group_id.l10n_pe_edi_code in ('IGV','EXO','INA','EXP','GRA'):
-                            igv_type = tax['tax'].l10n_pe_edi_affectation_reason
-                        if tax['tax'].tax_group_id.l10n_pe_edi_code == 'GRA':
-                            is_free = True
+                    for tax_total in invoice_line['tax_total_vals']:
+                        for tax in tax_total['tax_subtotal_vals']:
+                            if tax['tax_category_vals']['tax_scheme_vals']['name'] == 'IGV':
+                                igv_amount+=tax['tax_amount']
+                            if tax['tax_category_vals']['tax_scheme_vals']['name'] == 'ISC':
+                                isc_type = tax['tax_category_vals']['tax_exemption_reason_code']
+                                isc_amount+=tax['tax_amount']
+                            if tax['tax_category_vals']['tax_scheme_vals']['name'] == 'ICBPER':
+                                icbper_amount+=tax['tax_amount']
+                            if tax['tax_category_vals']['tax_scheme_vals']['name'] in ('IGV','EXO','INA','EXP','GRA'):
+                                igv_type = tax['tax_category_vals']['tax_exemption_reason_code']
+                            if tax['tax_category_vals']['tax_scheme_vals']['name'] == 'GRA':
+                                is_free = True
                         
                     _item = {
                         "codigo":line.product_id.default_code if line.product_id.default_code else '',
                         "codigo_producto_sunat":line.product_id.unspsc_code_id.code if line.product_id.unspsc_code_id else '',
                         "descripcion":line.name.replace('[%s] ' % line.product_id.default_code,'') if line.product_id else line.name,
-                        "cantidad":abs(line.quantity),
+                        "cantidad":abs(invoice_line['line_quantity']),
                         "unidad_de_medida":line.product_uom_id.l10n_pe_edi_measure_unit_code if line.product_uom_id.l10n_pe_edi_measure_unit_code else default_uom,
-                        "valor_unitario": invoice_line['price_subtotal_unit'],
-                        "precio_unitario": invoice_line['price_total_unit'],
+                        'valor_unitario': float_round(line.price_subtotal / line.quantity, precision_digits=price_precision) if line.quantity else 0.0,
+                        'precio_unitario': float_round(line.price_total / line.quantity, precision_digits=price_precision) if line.quantity else 0.0,
                         "subtotal":line.price_subtotal if not is_free else 0,
                         "total":line.price_total if not is_free else icbper_amount,
                         "tipo_de_igv": igv_type,

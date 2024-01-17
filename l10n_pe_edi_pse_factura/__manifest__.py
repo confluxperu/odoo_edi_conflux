@@ -5,7 +5,7 @@
     'summary': 'Electronic Invoicing for Peru using direct connection with PSE',
     'category': 'Accounting/Localizations/EDI',
     'author': 'Obox',
-    'license': 'OPL-1',
+    'license': 'Other proprietary',
 'description': """
 Extends EDI Peru Localization
 =============================

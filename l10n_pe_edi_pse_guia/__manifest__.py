@@ -5,7 +5,7 @@
     'summary': 'Electronic Delivery Note for Peru (REST API with PSE)',
     'category': 'Accounting/Localizations/EDI',
     'author': 'Obox',
-    'license': 'OPL-1',
+    'license': 'Other proprietary',
 'description': """
 Extends Electronica Delivery Note
 =============================

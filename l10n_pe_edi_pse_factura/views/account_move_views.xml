@@ -7,37 +7,37 @@
             <field name="inherit_id" ref="account.view_move_form"/>
             <field name="arch" type="xml">
                 <div class="oe_button_box" position="inside">
-                    <button class="text-danger" icon="fa-check" attrs="{'invisible':['|', '|', '|', ('edi_state','!=','cancelled'),('l10n_pe_edi_pse_void_status','in',('ask_for_status','accepted','objected')),('l10n_pe_edi_pse_cancel_uid','=',False),('state', '!=', 'cancel')]}">
+                    <button class="text-danger" icon="fa-check" invisible="edi_state != 'cancelled' or l10n_pe_edi_pse_void_status in ('ask_for_status','accepted','objected') or not l10n_pe_edi_pse_cancel_uid and state != 'cancel'">
                         <div class="o_stat_info">
                             <span class="o_stat_text">Void Rejected by</span>
                             <span class="o_stat_text">SUNAT</span>
                         </div>
                     </button>
-                    <button class="text-success" icon="fa-check" attrs="{'invisible':['|', '|', '|', ('edi_state','!=','cancelled'),('l10n_pe_edi_pse_void_status','in',('ask_for_status','rejected')),('l10n_pe_edi_pse_cancel_uid','=',False),('state', '!=', 'cancel')]}">
+                    <button class="text-success" icon="fa-check" invisible="edi_state != 'cancelled' or l10n_pe_edi_pse_void_status in ('ask_for_status','rejected') or not l10n_pe_edi_pse_cancel_uid and state != 'cancel'">
                         <div class="o_stat_info">
                             <span class="o_stat_text">Void Accepted by</span>
                             <span class="o_stat_text">SUNAT</span>
                         </div>
                     </button>
-                    <button class="text-warning" icon="fa-refresh" attrs="{'invisible':['|', '|', '|', ('edi_state','!=','cancelled'),('l10n_pe_edi_pse_void_status','in',('rejected','accepted','objected')),('l10n_pe_edi_pse_cancel_uid','=',False),('state', '=', 'draft')]}" name="action_retry_edi_documents_error" type="object">
+                    <button class="text-warning" icon="fa-refresh" invisible="edi_state != 'cancelled' or l10n_pe_edi_pse_void_status in ('rejected','accepted','objected') or not l10n_pe_edi_pse_cancel_uid and state != 'draft'" name="action_retry_edi_documents_error" type="object">
                         <div class="o_stat_info">
                             <span class="o_stat_text">Get Void Status in</span>
                             <span class="o_stat_text">SUNAT</span>
                         </div>
                     </button>
-                    <button class="text-warning" icon="fa-refresh" attrs="{'invisible':['|', '|', '|', ('edi_state','!=','sent'),('l10n_pe_edi_pse_status','in',('rejected','accepted','objected')),('l10n_pe_edi_pse_uid','=',False),('state', '=', 'draft')]}" name="action_retry_edi_documents_error" type="object">
+                    <button class="text-warning" icon="fa-refresh" invisible="edi_state != 'sent' or l10n_pe_edi_pse_status in ('rejected','accepted','objected') or not l10n_pe_edi_pse_uid and state != 'draft'" name="action_retry_edi_documents_error" type="object">
                         <div class="o_stat_info">
                             <span class="o_stat_text">Get Status in</span>
                             <span class="o_stat_text">SUNAT</span>
                         </div>
                     </button>
-                    <button class="text-danger" icon="fa-check" attrs="{'invisible':['|', '|', '|', ('edi_state','!=','sent'),('l10n_pe_edi_pse_status','in',('ask_for_status','accepted','objected')),('l10n_pe_edi_pse_uid','=',False),('state', '=', 'draft')]}">
+                    <button class="text-danger" icon="fa-cancel" invisible="edi_state != 'sent' or l10n_pe_edi_pse_status in ('ask_for_status','accepted','objected') or not l10n_pe_edi_pse_uid and state != 'draft'" >
                         <div class="o_stat_info">
                             <span class="o_stat_text">Rejected by</span>
                             <span class="o_stat_text">SUNAT</span>
                         </div>
                     </button>
-                    <button class="text-success" icon="fa-check" attrs="{'invisible':['|', '|', '|', ('edi_state','!=','sent'),('l10n_pe_edi_pse_status','in',('ask_for_status','rejected')),('l10n_pe_edi_pse_uid','=',False),('state', '=', 'draft')]}">
+                    <button class="text-success" icon="fa-check" invisible="edi_state != 'sent' or l10n_pe_edi_pse_status in ('ask_for_status','accepted') or not l10n_pe_edi_pse_uid and state != 'draft'" >
                         <div class="o_stat_info">
                             <span class="o_stat_text">Accepted by</span>
                             <span class="o_stat_text">SUNAT</span>
@@ -57,18 +57,19 @@
                     <field name="l10n_pe_edi_cdr_void_file_link" widget="url"/>
                 </xpath>
                 <xpath expr="//field[@name='l10n_pe_edi_charge_reason']" position="after">
-                    <field name="l10n_pe_edi_rectification_ref_type" attrs="{'readonly': [('state', '!=', 'draft')], 'invisible': [('move_type', '!=', 'out_refund')]}"/>
-                    <field name="l10n_pe_edi_rectification_ref_number" attrs="{'readonly': [('state', '!=', 'draft')], 'invisible': [('move_type', '!=', 'out_refund')]}"/>
-                    <field name="l10n_pe_edi_rectification_ref_date" attrs="{'readonly': [('state', '!=', 'draft')], 'invisible': [('move_type', '!=', 'out_refund')]}"/>
+                    <field name="l10n_pe_edi_rectification_ref_type" readonly= "state != 'draft'" invisible="move_type != 'out_refund'"/>
+                    <field name="l10n_pe_edi_rectification_ref_number" readonly= "state != 'draft'" invisible="move_type != 'out_refund'"/>
+                    <field name="l10n_pe_edi_rectification_ref_date" readonly= "state != 'draft'" invisible="move_type != 'out_refund'"/>
                 </xpath>
 
                 <field name="l10n_pe_edi_refund_reason" position="attributes">
-                    <attribute name="attrs">{'readonly': [('state', '!=', 'draft')], 'invisible': [('move_type', '!=', 'out_refund')]}</attribute>
+                    <attribute name="invisible">move_type != 'out_refund'</attribute>
+                    <attribute name="readonly">state != 'draft'</attribute>
                 </field>
 
                 <xpath expr="//page[@name='l10n_pe_edi']" position="inside">
                     <group string="Credit Installments" name="payment_fee_group">
-                        <field name="l10n_pe_edi_payment_fee_ids" attrs="{'readonly': [('state', '!=', 'draft')]}">
+                        <field name="l10n_pe_edi_payment_fee_ids" readonly="state != 'draft'">
                             <tree editable="bottom">
                                 <field name="amount_total" sum="Total"/>
                                 <field name="date_due"/>
@@ -77,7 +78,7 @@
                         </field>
                     </group>
                     <group string="Transport Documents" name="transport_group">
-                        <field name="l10n_pe_edi_transportref_ids" attrs="{'readonly': [('state', '!=', 'draft')]}">
+                        <field name="l10n_pe_edi_transportref_ids" readonly="state != 'draft'">
                             <tree editable="bottom">
                                 <field name="ref_type"/>
                                 <field name="ref_number"/>
