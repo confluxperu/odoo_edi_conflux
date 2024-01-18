@@ -132,6 +132,13 @@ class AccountEdiFormat(models.Model):
             for payment_terms in base_dte['vals']['payment_terms_vals']:
                 if payment_terms['payment_means_id'] == 'Credito':
                     conflux_dte['forma_de_pago_credito'] = True
+                if payment_terms['id'] == 'Detraccion':
+                    conflux_dte["detraccion"]=True
+                    conflux_dte["total_detraccion"]=payment_terms['amount']
+                    conflux_dte["porcentaje_detraccion"]=payment_terms['payment_percent']
+                    conflux_dte["codigo_detraccion"]=payment_terms['payment_means_id']
+                    conflux_dte['medio_de_pago_detraccion']='999'
+
         for tax_total in base_dte['vals']['tax_total_vals']:
             for tax_subtotal in tax_total['tax_subtotal_vals']:
                 if tax_subtotal['tax_category_vals']['tax_scheme_vals']['name']=='IGV':
@@ -273,14 +280,7 @@ class AccountEdiFormat(models.Model):
                 'importe_a_pagar':payment_fee.amount_total,
             })
 
-        spot = record._l10n_pe_edi_get_spot()
-
-        if spot:
-            conflux_dte["detraccion"]=True
-            conflux_dte["total_detraccion"]=spot['Amount']
-            conflux_dte["porcentaje_detraccion"]=spot['PaymentPercent']
-            conflux_dte["codigo_detraccion"]=spot['PaymentMeansID']
-            conflux_dte['medio_de_pago_detraccion']=spot['PaymentMeansCode']
+        #spot = record._l10n_pe_edi_get_spot()
         
         if record.partner_id.l10n_pe_edi_retention_type:
             conflux_dte["retencion_tipo"]=record.partner_id.l10n_pe_edi_retention_type
