@@ -55,6 +55,7 @@ class Picking(models.Model):
     l10n_pe_edi_pse_uid = fields.Char(string='PSE Unique identifier', copy=False)
     l10n_pe_edi_qr_text = fields.Char(string='QR Text', copy=False)
     l10n_pe_edi_accepted_by_sunat = fields.Boolean(string='EDI Accepted by Sunat', copy=False)
+    l10n_pe_edi_packages = fields.Integer(string='Packages', copy=False)
 
     def action_send_delivery_guide_pse(self):
         """Make the validations required to generate the EDI document, generates the XML, and sent to sign in the
@@ -141,7 +142,7 @@ class Picking(models.Model):
             'fecha_de_inicio': picking.l10n_pe_edi_departure_start_date.strftime("%Y-%m-%d"),
 
             'peso': picking.weight,
-            'bultos_paquetes':0,
+            'bultos_paquetes':picking.l10n_pe_edi_packages or 1,
             'unidad_de_medida_peso': 'KGM',
 
             'origen_establecimiento_anexo': origin_address_id.l10n_pe_edi_address_type_code or None,
@@ -196,7 +197,7 @@ class Picking(models.Model):
 
         if picking.l10n_pe_edi_document_number and picking.l10n_pe_edi_related_document_type:
             _despatch['documentos_de_referencia'] = [{
-                'numero_de_documento': picking.l10n_pe_edi_document_number,
+                'numero_de_documento': picking.l10n_pe_edi_document_number.replace(' ', ''),
                 'tipo_de_documento': picking.l10n_pe_edi_related_document_type,
                 'proveedor_documento_tipo': picking.company_id.partner_id.l10n_latam_identification_type_id.l10n_pe_vat_code if picking.l10n_pe_edi_related_document_type in ('01', '03', '04', '09', '12', '48') else None,
                 'proveedor_documento_numero': picking.company_id.vat if picking.l10n_pe_edi_related_document_type in ('01', '03', '04', '09', '12', '48') else None,
