@@ -74,6 +74,17 @@ class AccountMove(models.Model):
 
         return super()._get_starting_sequence()
 
+    def _get_last_sequence_domain(self, relaxed=False):
+        where_string, param = super()._get_last_sequence_domain(relaxed=relaxed)
+        log.info('where_string: %s', where_string)
+        log.info('param: %s', param)
+        '''if self.journal_id.l10n_pe_is_dte:
+            where_string += " AND l10n_latam_document_type_id = %(l10n_latam_document_type_id)s"
+            param['l10n_latam_document_type_id'] = self.l10n_latam_document_type_id.id or 0
+            if not relaxed:
+                param['anti_regex'] = 'NULL'''
+        return where_string, param
+
     def l10n_pe_edi_retention_amount(self):
         if self.partner_id.l10n_pe_edi_retention_type:
             return self.amount_total*(0.03 if self.partner_id.l10n_pe_edi_retention_type=='01' else 0.06)
