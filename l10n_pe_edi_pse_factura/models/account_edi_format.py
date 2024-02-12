@@ -76,8 +76,6 @@ class AccountEdiFormat(models.Model):
         price_precision = self.env['decimal.precision'].precision_get('Product Price')
         builder = self.env['account.edi.xml.ubl_pe']
         invoice_vals = builder._export_invoice_vals(invoice)
-        log.info("VERIFICIAR DATA PREVIA A XML")
-        log.info(invoice_vals)
         base_dte = builder._export_invoice_vals(invoice)
 
         record = base_dte.get('invoice')
@@ -128,6 +126,9 @@ class AccountEdiFormat(models.Model):
             "items": []
         }
 
+        if base_dte['taxes_vals']['base_amount_currency']!=0:
+            conflux_dte['tipo_de_cambio'] = base_dte['taxes_vals']['base_amount']/base_dte['taxes_vals']['base_amount_currency']
+
         if base_dte['vals'].get('payment_terms_vals', []):
             for payment_terms in base_dte['vals']['payment_terms_vals']:
                 if payment_terms['payment_means_id'] == 'Credito':
@@ -168,7 +169,6 @@ class AccountEdiFormat(models.Model):
         if base_dte['vals'].get('line_vals'):
             for invoice_line in base_dte['vals'].get('line_vals', []):
                 line = invoice_line.get('line')
-                log.info(invoice_line)
                 if line.price_subtotal<0 and line.l10n_pe_edi_allowance_charge_reason_code in ('02','00'):
                     descuento_importe_02+=abs(line.price_subtotal)
                     continue
@@ -294,8 +294,6 @@ class AccountEdiFormat(models.Model):
                     'guia_tipo': despatch.ref_type,
                     'guia_serie_numero': despatch.ref_number
                 })
-
-        log.info(conflux_dte)
         return conflux_dte
 
     def _l10n_pe_edi_sign_invoices_conflux(self, invoice, edi_filename, edi_str=''):
@@ -390,19 +388,21 @@ class AccountEdiFormat(models.Model):
         xml_url = None
         cdr_url = None
         pdf_url = None
-
+        success = False
         extra_msg = ''
         edi_status = 'ask_for_status'
         if result.get('emision_aceptada', False):
             edi_status = 'accepted'
+            success = True
             if result.get('enlace_del_cdr', False):
                 cdr_url = result['enlace_del_cdr']
         if result.get('emision_rechazada', False):
             extra_msg = '%s - %s' % (result.get('sunat_description', ''), result.get('sunat_note', '')), 
             edi_status = 'rejected'
+            success = True
             
         return {
-            'success':True,
+            'success':success,
             'xml_url':xml_url,
             'pdf_url':pdf_url,
             'cdr_url':cdr_url,
@@ -470,7 +470,7 @@ class AccountEdiFormat(models.Model):
         xml_url = None
         cdr_url = None
         pdf_url = None
-        
+        success = False
         if result.get('status')=='success':
             edi_status = 'ask_for_status'
             if result['success']['data'].get('enlace_del_xml', False):
@@ -479,13 +479,15 @@ class AccountEdiFormat(models.Model):
                 pdf_url = result['success']['data']['enlace_del_pdf']
             if result['success']['data'].get('emision_aceptada', False):
                 edi_status = 'accepted'
+                success = True
                 if result['success']['data'].get('enlace_del_cdr', False):
                     cdr_url = result['success']['data']['enlace_del_cdr']
             if result['success']['data'].get('emision_rechazada', False):
                 edi_status = 'rejected'
+                success = True
                 
             return {
-                'success':True,
+                'success':success,
                 'uid':result['success']['data']['uid'],
                 'xml_url':xml_url,
                 'pdf_url':pdf_url,

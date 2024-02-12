@@ -25,7 +25,7 @@
                             <span class="o_stat_text">SUNAT</span>
                         </div>
                     </button>
-                    <button class="text-warning" icon="fa-refresh" invisible="edi_state != 'sent' or l10n_pe_edi_pse_status in ('rejected','accepted','objected') or not l10n_pe_edi_pse_uid and state != 'draft'" name="action_retry_edi_documents_error" type="object">
+                    <button class="text-warning" icon="fa-refresh" invisible="edi_state != 'to_send' or l10n_pe_edi_pse_status in ('rejected','accepted','objected') or not l10n_pe_edi_pse_uid and state != 'draft'" name="action_retry_edi_documents_error" type="object">
                         <div class="o_stat_info">
                             <span class="o_stat_text">Get Status in</span>
                             <span class="o_stat_text">SUNAT</span>
@@ -37,7 +37,7 @@
                             <span class="o_stat_text">SUNAT</span>
                         </div>
                     </button>
-                    <button class="text-success" icon="fa-check" invisible="edi_state != 'sent' or l10n_pe_edi_pse_status in ('ask_for_status','accepted') or not l10n_pe_edi_pse_uid and state != 'draft'" >
+                    <button class="text-success" icon="fa-check" invisible="edi_state != 'sent' or l10n_pe_edi_pse_status in ('ask_for_status','rejected') or not l10n_pe_edi_pse_uid and state != 'draft'" >
                         <div class="o_stat_info">
                             <span class="o_stat_text">Accepted by</span>
                             <span class="o_stat_text">SUNAT</span>

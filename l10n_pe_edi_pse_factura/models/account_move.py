@@ -108,6 +108,12 @@ class AccountMove(models.Model):
             self.write({
                 'l10n_pe_edi_payment_fee_ids': invoice_date_due_vals_list
             })
+
+    def _retry_edi_documents_error_hook(self):
+        for move in self.filtered(lambda m: m.l10n_pe_edi_pse_uid and (m.l10n_pe_edi_pse_status=='ask_for_status')):
+            move.edi_document_ids.filtered(lambda d: d.state in ('sent')).write({'state': 'to_send'})
+        for move in self.filtered(lambda m: m.l10n_pe_edi_pse_cancel_uid and (m.l10n_pe_edi_pse_void_status=='ask_for_status')):
+            move.edi_document_ids.filtered(lambda d: d.state in ('cancelled')).write({'state': 'to_cancel'})
     
     def _l10n_pe_edi_get_extra_report_values(self):
         self.ensure_one()
