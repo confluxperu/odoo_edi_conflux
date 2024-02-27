@@ -38,14 +38,15 @@ def request_json(token="", method="post", url=None, data_dict=None):
                 headers={'Authorization': 'Token '+token},
                 json=data_dict)
     except requests.exceptions.RequestException as e:
+        log.info(data_dict)
         return {"message":_("Exception: %s" % e)}
     if r.status_code in (200,400):
+        log.info(data_dict)
         try:
             response = json.loads(r.content.decode())
             log.info(response)
         except ValueError as e:
             return {"message":_("Exception decoding JSON response: %s" % e)}
-
         return response
     else:
         log.info(url)
@@ -209,8 +210,8 @@ class AccountEdiFormat(models.Model):
                         "descripcion":line.name.replace('[%s] ' % line.product_id.default_code,'') if line.product_id else line.name,
                         "cantidad":abs(invoice_line['line_quantity']),
                         "unidad_de_medida":line.product_uom_id.l10n_pe_edi_measure_unit_code if line.product_uom_id.l10n_pe_edi_measure_unit_code else default_uom,
-                        'valor_unitario': float_round(line.price_subtotal / line.quantity, precision_digits=price_precision) if line.quantity else 0.0,
-                        'precio_unitario': float_round(line.price_total / line.quantity, precision_digits=price_precision) if line.quantity else 0.0,
+                        'valor_unitario': float_round(line.price_subtotal / abs(line.quantity), precision_digits=price_precision) if line.quantity else 0.0,
+                        'precio_unitario': float_round(line.price_total / abs(line.quantity), precision_digits=price_precision) if line.quantity else 0.0,
                         "subtotal":line.price_subtotal if not is_free else 0,
                         "total":line.price_total if not is_free else icbper_amount,
                         "tipo_de_igv": igv_type,
@@ -233,8 +234,8 @@ class AccountEdiFormat(models.Model):
                         _item['anticipo_regularizacion'] = line.l10n_pe_edi_downpayment_line
                         _item['anticipo_numero_de_documento'] = line.l10n_pe_edi_downpayment_ref_number
                         _item['anticipo_tipo_de_documento'] = line.l10n_pe_edi_downpayment_ref_type
-                        '''if line.l10n_pe_edi_downpayment_date:
-                            _item['anticipo_fecha'] = line.l10n_pe_edi_downpayment_date'''
+                        if line.l10n_pe_edi_downpayment_date:
+                            _item['anticipo_fecha'] = line.l10n_pe_edi_downpayment_date.strftime('%Y-%m-%d')
                     conflux_dte['items'].append(_item)
 
 
@@ -461,6 +462,7 @@ class AccountEdiFormat(models.Model):
             return {'error': self._l10n_pe_edi_get_general_error_messages()['L10NPE18'], 'blocking_level': 'error'}
 
         if result.get('message') and result.get('status')=='error':
+            log.info(data_dict)
             if result['message'] == 'no-credit':
                 error_message = self._l10n_pe_edi_get_iap_buy_credits_message(company)
             else:
@@ -483,6 +485,7 @@ class AccountEdiFormat(models.Model):
                 if result['success']['data'].get('enlace_del_cdr', False):
                     cdr_url = result['success']['data']['enlace_del_cdr']
             if result['success']['data'].get('emision_rechazada', False):
+                log.info(data_dict)
                 edi_status = 'rejected'
                 success = True
                 
