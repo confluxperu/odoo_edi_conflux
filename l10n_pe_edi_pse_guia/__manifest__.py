@@ -6,17 +6,17 @@
     'category': 'Accounting/Localizations/EDI',
     'author': 'Obox',
     'license': 'Other proprietary',
-'description': """
-Extends Electronica Delivery Note
-=============================
-- Working with a Authorized Supplier for electronic invoices
-- Manage the following electronic documents: Factura, Boleta, Nota de Credito, Nota de Debito, Factura + Percepción
-- Support Cancellation of any documents
-- Support Credit notes with foreign references
-- Support Credit note with payment fee definition
-- Support Down Payments integrated with sales and foreign references
-- Support Invoices with customer withholdings (Only customers authorized as agent by SUNAT)
-- Support Invoices with transport references
+    'description': """
+        Extends Electronica Delivery Note
+        =================================
+        - Working with a Authorized Supplier for electronic invoices
+        - Manage the following electronic documents: Factura, Boleta, Nota de Credito, Nota de Debito, Factura + Percepción
+        - Support Cancellation of any documents
+        - Support Credit notes with foreign references
+        - Support Credit note with payment fee definition
+        - Support Down Payments integrated with sales and foreign references
+        - Support Invoices with customer withholdings (Only customers authorized as agent by SUNAT)
+        - Support Invoices with transport references
     """,
     'depends': [
         'l10n_pe_edi_pse_factura',
