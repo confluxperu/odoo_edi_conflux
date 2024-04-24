@@ -6,7 +6,7 @@
         <field name="inherit_id" ref="l10n_pe_edi_stock.view_picking_edi_form" />
         <field name="arch" type="xml">
             <xpath expr="//div//button[@name='action_send_delivery_guide']" position="attributes">
-                <attribute name="attrs">{'invisible':1}</attribute>
+                <attribute name="invisible">True</attribute>
             </xpath>
             <xpath expr="//div//button[@name='action_send_delivery_guide']" position="after">
                 <button
@@ -14,18 +14,20 @@
                     type="object"
                     class="oe_link"
                     string="Retry"
-                    attrs="{'invisible': [('l10n_pe_edi_status', 'not in', (False, 'to_send', 'to_cancel'))]}"/>
+                    invisible="l10n_pe_edi_status not in (False, 'to_send', 'to_cancel')"
+                />
             </xpath>
             <xpath expr="//header//button[@name='action_send_delivery_guide']" position="attributes">
-                <attribute name="attrs">{'invisible':1}</attribute>
+                <attribute name="invisible">True</attribute>
             </xpath>
             <xpath expr="//header//button[@name='action_send_delivery_guide']" position="after">
                 <button name="action_send_delivery_guide_pse" type="object"
                     string="Generate Delivery Guide"
-                    attrs="{'invisible':['|', '|', '|',('state', '!=', 'done'), ('country_code', '!=', 'PE'), ('picking_type_code', '!=', 'outgoing'), ('l10n_pe_edi_status', '!=', False)]}"/>
+                    invisible="state != 'done' or country_code != 'PE' or picking_type_code != 'outgoing' or l10n_pe_edi_status != False"
+                />
             </xpath>
             <xpath expr="//field[@name='l10n_pe_edi_transport_type']" position="after">
-                <field name="l10n_pe_edi_sequence_id" attrs="{'invisible': [('l10n_pe_edi_transport_type', '=', False)],'readonly': [('l10n_pe_edi_status', '=', 'sent')]}" options="{'no_create': True, 'no_create_edit':True}"/>
+                <field name="l10n_pe_edi_sequence_id" invisible="l10n_pe_edi_transport_type == False" readonly="l10n_pe_edi_status == 'sent'" options="{'no_create': True, 'no_create_edit':True}" />
             </xpath>
             <xpath expr="//field[@name='l10n_latam_document_number']" position="after">
                 <field name="l10n_pe_edi_pse_uid" readonly="1" invisible="1"/>
