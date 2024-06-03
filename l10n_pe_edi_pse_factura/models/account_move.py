@@ -188,3 +188,19 @@ class AccountMoveLine(models.Model):
             'price_total_unit': self.price_total / self.quantity if self.quantity else 0.0,
         })
         return res
+    
+    def show_detail_downpayment(self):
+        view = self.env.ref('l10n_pe_edi_pse_factura.detail_downpayment', False)
+        return {
+            'name': self.name ,
+            'type': 'ir.actions.act_window',
+            'view_mode': 'form',
+            'res_model': 'account.move.line',
+            'views': [(view.id, 'form')],
+            'view_id': view.id,
+            'target': 'new',
+            'res_id': self.id,
+            'context': dict(
+                self.env.context,
+            ),
+        }

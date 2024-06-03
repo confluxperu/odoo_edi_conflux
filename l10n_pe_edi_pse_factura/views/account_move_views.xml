@@ -85,6 +85,27 @@
                         </field>
                     </group>
                 </xpath>
+                <xpath expr="//field[@name='invoice_line_ids']/tree/field[@name='discount']" position="after">
+                    <button name="show_detail_downpayment" string="+" type="object" attrs="{'invisible': [('id','=',False)] }" icon="fa-external-link" width="0.1" options="{&quot;warn&quot;: true  }"/>
+                </xpath>
+            </field>
+        </record>
+        <record id="detail_downpayment" model="ir.ui.view">
+            <field name="model">account.move.line</field>
+            <field name="name">form_l10n_pe_edi.downpayment</field>
+            <field name="arch" type="xml">
+                 <form string="Integrity Sale">
+                     <sheet>
+                         <group>
+                             <field name="name" readonly="1" />
+                            <field name="l10n_pe_edi_downpayment_line"/>
+                            <field name="l10n_pe_edi_downpayment_invoice_id" attrs="{'readonly': [('l10n_pe_edi_downpayment_line','!=', True)]}" />
+                            <field name="l10n_pe_edi_downpayment_ref_type" attrs="{'readonly': [('l10n_pe_edi_downpayment_line','!=', True)]}" />
+                            <field name="l10n_pe_edi_downpayment_ref_number" attrs="{'readonly': [('l10n_pe_edi_downpayment_line','!=', True)]}" />
+                            <field name="l10n_pe_edi_downpayment_date" attrs="{'readonly': [('l10n_pe_edi_downpayment_line','!=', True)]}" />
+                         </group>
+                     </sheet>
+                 </form>
             </field>
         </record>
     </data>
