@@ -64,11 +64,13 @@ class AccountEdiFormat(models.Model):
     def _l10n_pe_edi_pse_create_attachment(self, documents):
         attachment = self.env['ir.attachment']
         attachment_ids = []
-        for filename, url in documents:
+        for filename, url, company in documents:
             created = attachment.create({
                 "name":filename,
                 "type":'url',
-                "url":url
+                "url":url,
+                "public":True,
+                "company_id": company.id
             })
             attachment_ids.append(created.id)
         return attachment_ids
@@ -317,15 +319,15 @@ class AccountEdiFormat(models.Model):
             update_invoice['l10n_pe_edi_pse_uid'] = service_iap.get('uid')
         if not invoice.l10n_pe_edi_pse_uid:
             if service_iap.get('xml_url'):
-                attachment_xml_id = self._l10n_pe_edi_pse_create_attachment([('%s.xml' % edi_filename, service_iap['xml_url'])])
+                attachment_xml_id = self._l10n_pe_edi_pse_create_attachment([('%s.xml' % edi_filename, service_iap['xml_url'], invoice.company_id)])
                 update_invoice['l10n_pe_edi_xml_file'] = attachment_xml_id[0]
                 service_iap['xml_attachment_id'] = update_invoice['l10n_pe_edi_xml_file']
             if service_iap.get('pdf_url'):
-                attachment_pdf_id = self._l10n_pe_edi_pse_create_attachment([('%s.pdf' % edi_filename, service_iap['pdf_url'])])
+                attachment_pdf_id = self._l10n_pe_edi_pse_create_attachment([('%s.pdf' % edi_filename, service_iap['pdf_url'], invoice.company_id)])
                 update_invoice['l10n_pe_edi_pdf_file'] = attachment_pdf_id[0]
         if update_invoice.get('l10n_pe_edi_pse_status', False) in ('accepted','objected'):
             if service_iap.get('cdr_url'):
-                attachment_cdr_id = self._l10n_pe_edi_pse_create_attachment([('CDR-%s.xml' % edi_filename, service_iap['cdr_url'])])
+                attachment_cdr_id = self._l10n_pe_edi_pse_create_attachment([('CDR-%s.xml' % edi_filename, service_iap['cdr_url'], invoice.company_id)])
                 update_invoice['l10n_pe_edi_cdr_file'] = attachment_cdr_id[0]
         if update_invoice:
             invoice.write(update_invoice)

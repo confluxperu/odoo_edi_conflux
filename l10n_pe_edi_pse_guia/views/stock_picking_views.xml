@@ -33,6 +33,12 @@
                 <field name="l10n_pe_edi_pse_uid" readonly="1" invisible="1"/>
                 <field name="l10n_pe_edi_qr_text" readonly="1" invisible="1"/>
                 <field name="l10n_pe_edi_accepted_by_sunat" invisible="1"/>
+                <field name="l10n_pe_edi_pdf_file_link" widget="url" readonly="1"/>
+                <field name="l10n_pe_edi_file_link" widget="url" readonly="1"/>
+                <field name="l10n_pe_edi_cdr_file_link" widget="url" readonly="1"/>
+            </xpath>
+            <xpath expr="//field[@name='l10n_pe_edi_observation']" position="after">
+                <field name="weight" readonly="0"/>
             </xpath>
         </field>
     </record>

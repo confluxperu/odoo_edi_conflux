@@ -56,6 +56,23 @@ class Picking(models.Model):
     l10n_pe_edi_qr_text = fields.Char(string='QR Text', copy=False)
     l10n_pe_edi_accepted_by_sunat = fields.Boolean(string='EDI Accepted by Sunat', copy=False)
 
+    l10n_pe_edi_file = fields.Many2one('ir.attachment', string='DTE file', copy=False)
+    l10n_pe_edi_file_link = fields.Char(string='DTE file', compute='_compute_l10n_pe_edi_links')
+    l10n_pe_edi_hash = fields.Char(string='DTE Hash', copy=False)
+    l10n_pe_edi_pdf_file = fields.Many2one('ir.attachment', string='DTE PDF file', copy=False)
+    l10n_pe_edi_pdf_file_link = fields.Char(string='DTE PDF file', compute='_compute_l10n_pe_edi_links')
+    l10n_pe_edi_cdr_file = fields.Many2one('ir.attachment', string='CDR file', copy=False)
+    l10n_pe_edi_cdr_file_link = fields.Char(string='CDR file', compute='_compute_l10n_pe_edi_links')
+    l10n_pe_edi_cdr_void_file = fields.Many2one('ir.attachment', string='CDR Void file', copy=False)
+    l10n_pe_edi_cdr_void_file_link = fields.Char(string='CDR Void file', compute='_compute_l10n_pe_edi_links')
+
+    def _compute_l10n_pe_edi_links(self):
+        for move in self:
+            move.l10n_pe_edi_file_link = move.l10n_pe_edi_file.url if move.l10n_pe_edi_file else None
+            move.l10n_pe_edi_pdf_file_link = move.l10n_pe_edi_pdf_file.url if move.l10n_pe_edi_pdf_file else None
+            move.l10n_pe_edi_cdr_file_link = move.l10n_pe_edi_cdr_file.url if move.l10n_pe_edi_cdr_file else None
+            move.l10n_pe_edi_cdr_void_file_link = move.l10n_pe_edi_cdr_void_file.url if move.l10n_pe_edi_cdr_void_file else None
+
     def action_send_delivery_guide_pse(self):
         """Make the validations required to generate the EDI document, generates the XML, and sent to sign in the
         SUNAT"""
@@ -205,7 +222,7 @@ class Picking(models.Model):
         if base_dte.get('moves'):
             for move in base_dte.get('moves'):
                 _item = {
-                    'cantidad': move.quantity_done,
+                    'cantidad': move.quantity,
                     'descripcion': move.description_picking if move.description_picking else move.product_id.name,
                     'codigo': move.product_id.default_code or '',
                     'codigo_producto_sunat': move.product_id.unspsc_code_id.code or '',
@@ -297,26 +314,27 @@ class Picking(models.Model):
                     xml_document = r_xml.content
                 return {
                     'uid':result['success']['data']['uid'],
-                    'xml_document':xml_document,
-                    'pdf':pdf_url,
-                    'cdr':cdr,
+                    #'xml_document':xml_document,
+                    #'pdf':pdf_url,
+                    #'cdr':cdr,
+                    'cdr_url': result['success']['data']['enlace_del_cdr'],
                     'edi_accepted': True,
                     'qr': result.get('cadena_para_codigo_qr')
                 }
             else:
-                xml_url = ''
+                '''xml_url = ''
                 if result['success']['data'].get('enlace_del_xml', False):
                     xml_url = '<a href="%s" target="_blank">%s</a>' % (result['success']['data']['enlace_del_xml'],result['success']['data']['enlace_del_xml'])
                 pdf_url = ''
                 if result['success']['data'].get('enlace_del_pdf', False):
-                    pdf_url = '<a href="%s" target="_blank">%s</a>' % (result['success']['data']['enlace_del_pdf'],result['success']['data']['enlace_del_pdf'])
+                    pdf_url = '<a href="%s" target="_blank">%s</a>' % (result['success']['data']['enlace_del_pdf'],result['success']['data']['enlace_del_pdf'])'''
                 return {
                     'uid':result['success']['data']['uid'],
+                    'xml_url': result['success']['data']['enlace_del_xml'],
+                    'pdf_url': result['success']['data']['enlace_del_pdf'],
                     'error': _("Validation is in progress in the government side (identifier: %s).", html_escape(result['success']['data']['uid'])),
                     'blocking_level': 'info',
-                    'extra_msg':_("The EDI document was successfully created and signed by the PSE.<br/>" +
-                                "XML download link: %s<br/>"
-                                "PDF download link: %s" % (xml_url, pdf_url))
+                    'extra_msg':_("The EDI document was successfully created and signed by the PSE.<br/>")
                 }
         extra_msg = result.get('message','')
         return {'xml_document': xml_document, 'cdr': cdr, 'extra_msg': extra_msg}
@@ -327,7 +345,12 @@ class Picking(models.Model):
         return self.l10n_pe_edi_qr_text or ''
 
     def _l10n_pe_edi_sign_delivery_conflux(self, picking):
-        if(picking.l10n_pe_edi_pse_uid):
+        edi_filename = '%s-%s-%s' % (
+            picking.company_id.vat,
+            '09',
+            picking.l10n_latam_document_number.replace(' ', ''),
+        )
+        if picking.l10n_pe_edi_pse_uid:
             service_iap = self._l10n_pe_edi_sign_service_step_2_conflux(
                 picking.company_id, picking.l10n_pe_edi_pse_uid)
         else:
@@ -340,8 +363,19 @@ class Picking(models.Model):
         update_picking = {}
         if service_iap.get('edi_accepted', False):
             update_picking['l10n_pe_edi_accepted_by_sunat'] = service_iap.get('edi_accepted')
+            if not picking.l10n_pe_edi_cdr_file:
+                attachment_cdr_id = self._l10n_pe_edi_pse_create_attachment([('%s.cdr' % edi_filename, service_iap['cdr_url'], picking.company_id)])
+                update_picking['l10n_pe_edi_cdr_file'] = attachment_cdr_id[0]
         if service_iap.get('uid', False):
             update_picking['l10n_pe_edi_pse_uid'] = service_iap.get('uid')
+            if not picking.l10n_pe_edi_hash:
+                update_picking['l10n_pe_edi_hash'] = ''
+            if not picking.l10n_pe_edi_file and service_iap.get('xml_url', False):
+                attachment_xml_id = self._l10n_pe_edi_pse_create_attachment([('%s.xml' % edi_filename, service_iap['xml_url'], picking.company_id)])
+                update_picking['l10n_pe_edi_file'] = attachment_xml_id[0]
+            if not picking.l10n_pe_edi_pdf_file and service_iap.get('pdf_url', False):
+                attachment_pdf_id = self._l10n_pe_edi_pse_create_attachment([('%s.pdf' % edi_filename, service_iap['pdf_url'], picking.company_id)])
+                update_picking['l10n_pe_edi_pdf_file'] = attachment_pdf_id[0]
         if service_iap.get('qr', False):
             update_picking['l10n_pe_edi_qr_text'] = service_iap.get('qr')
         if service_iap.get('ticket_code', False):
@@ -349,3 +383,18 @@ class Picking(models.Model):
         if update_picking:
             picking.write(update_picking)
         return service_iap
+    
+    @api.model
+    def _l10n_pe_edi_pse_create_attachment(self, documents):
+        attachment = self.env['ir.attachment']
+        attachment_ids = []
+        for filename, url, company in documents:
+            created = attachment.create({
+                "name":filename,
+                "type":'url',
+                "url":url,
+                "public":True,
+                "company_id": company.id
+            })
+            attachment_ids.append(created.id)
+        return attachment_ids
