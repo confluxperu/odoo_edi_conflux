@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from odoo import api, fields, models
+from odoo import api, fields, models,_
 import logging
 log = logging.getLogger(__name__)
 
@@ -165,11 +165,27 @@ class AccountMove(models.Model):
     def button_cancel_posted_moves(self):
         # OVERRIDE
         pe_edi_format = self.env.ref('l10n_pe_edi_pse_factura.edi_pe_pse')
-        pe_invoices = self.filtered(pe_edi_format._is_required_for_invoice(self))
+        pe_invoices = self.filtered(pe_edi_format._is_required_for_invoice)
         if pe_invoices:
             cancel_reason_needed = pe_invoices.filtered(lambda move: not move.l10n_pe_edi_cancel_reason)
             if cancel_reason_needed:
                 return self.env.ref('l10n_pe_edi.action_l10n_pe_edi_cancel').sudo().read()[0]
+            to_cancel_documents = self.env['account.edi.document']
+            for move in pe_invoices:
+                move._check_fiscalyear_lock_date()
+                is_move_marked = False
+                for doc in move.edi_document_ids:
+                    if doc.edi_format_id._needs_web_services() \
+                            and doc.attachment_id \
+                            and doc.state == 'sent' \
+                            and move.is_invoice(include_receipts=True) \
+                            and doc.edi_format_id._is_required_for_invoice(move):
+                        to_cancel_documents |= doc
+                        is_move_marked = True
+                if is_move_marked:
+                    move.message_post(body=_("A cancellation of the EDI has been requested."))
+
+            return to_cancel_documents.write({'state': 'to_cancel', 'error': False, 'blocking_level': False})
         return super().button_cancel_posted_moves()
 
 class AccountMoveLine(models.Model):
