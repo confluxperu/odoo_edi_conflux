@@ -164,13 +164,10 @@ class AccountMove(models.Model):
 
     def button_cancel_posted_moves(self):
         # OVERRIDE
-        log.info('*************button_cancel_posted_moves*************')
         pe_edi_format = self.env.ref('l10n_pe_edi_pse_factura.edi_pe_pse')
-        pe_invoices = self.filtered(pe_edi_format._is_required_for_invoice)
-        log.info(pe_invoices)
+        pe_invoices = self.filtered(pe_edi_format._is_required_for_invoice(self))
         if pe_invoices:
-            cancel_reason_needed = pe_invoices
-            log.info(cancel_reason_needed)
+            cancel_reason_needed = pe_invoices.filtered(lambda move: not move.l10n_pe_edi_cancel_reason)
             if cancel_reason_needed:
                 return self.env.ref('l10n_pe_edi.action_l10n_pe_edi_cancel').sudo().read()[0]
         return super().button_cancel_posted_moves()
