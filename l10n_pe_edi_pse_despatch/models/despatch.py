@@ -419,7 +419,7 @@ class LogisticDespatch(models.Model):
     def verify_address_street(self, address_street):
         new_address = address_street
         new_address = new_address.translate(
-            {ord(c): " " for c in "°!@#$%^&*()[]{};:,./<>?\|`~-=_+'"})
+            {ord(c): " " for c in "°!@#$%^&*()[]{};:,./<>?\\|`~-=_+'"})
         new_address = new_address.strip()
         count_newaddress = len(new_address)
         if count_newaddress > 0:
