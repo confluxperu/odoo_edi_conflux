@@ -51,7 +51,16 @@ def request_json(token="", method="post", url=None, data_dict=None):
 class Picking(models.Model):
     _inherit = 'stock.picking'
 
-    l10n_pe_edi_sequence_id = fields.Many2one('ir.sequence', string='Serial Sequence', domain=[('code','=','l10n_pe_edi_stock.stock_picking_sunat_sequence')])
+    l10n_pe_edi_sequence_id = fields.Many2one(
+        'ir.sequence', 
+        string='Serial Sequence', 
+        domain=lambda self: [
+            ('code', '=', 'l10n_pe_edi_stock.stock_picking_sunat_sequence'),
+            '|', 
+            ('company_id', '=', self.env.company.id), 
+            ('company_id.parent_id', '=', self.env.company.id)
+        ]
+    )
     l10n_pe_edi_pse_uid = fields.Char(string='PSE Unique identifier', copy=False)
     l10n_pe_edi_qr_text = fields.Char(string='QR Text', copy=False)
     l10n_pe_edi_accepted_by_sunat = fields.Boolean(string='EDI Accepted by Sunat', copy=False)
@@ -108,8 +117,8 @@ class Picking(models.Model):
                 continue
 
             # == Create the attachments ==
-            if res.get('xml_document'):
-                record._l10n_pe_edi_decode_cdr(edi_filename, res['xml_document'])
+            '''if res.get('xml_document'):
+                record._l10n_pe_edi_decode_cdr(edi_filename, res['xml_document'])'''
             if res.get('cdr'):
                 res_attachment = self.env['ir.attachment'].create({
                     'res_model': record._name,
@@ -270,6 +279,7 @@ class Picking(models.Model):
                 'pdf':pdf_url,
                 'cdr':cdr,
                 'edi_accepted':True,
+				'cdr_url': result.get('enlace_del_cdr', False),
                 'qr': result.get('cadena_para_codigo_qr'),
                 'ticket_code':ticket_code,
             }
