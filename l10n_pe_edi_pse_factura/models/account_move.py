@@ -1,11 +1,29 @@
 # -*- coding: utf-8 -*-
 from odoo import api, fields, models
+from odoo.tools.sql import column_exists, create_column, drop_index, index_exists
 
 import logging
 log = logging.getLogger(__name__)
 
 class AccountMove(models.Model):
     _inherit = 'account.move'
+
+    def _auto_init(self):
+        res = super()._auto_init()
+        if index_exists(self.env.cr, "account_move_unique_name_latam"):
+            drop_index(self.env.cr, "account_move_unique_name", self._table)
+            drop_index(self.env.cr, "account_move_unique_name_latam", self._table)
+            self.env.cr.execute("""
+                CREATE UNIQUE INDEX account_move_unique_name
+                                 ON account_move(name, journal_id)
+                              WHERE (state = 'posted' AND name != '/'
+                                AND (l10n_latam_document_type_id IS NULL OR move_type NOT IN ('in_invoice', 'in_refund', 'in_receipt','out_invoice','out_refund')));
+                CREATE UNIQUE INDEX account_move_unique_name_latam
+                                 ON account_move(name, journal_id, l10n_latam_document_type_id, company_id)
+                              WHERE (state = 'posted' AND name != '/'
+                                AND (l10n_latam_document_type_id IS NOT NULL AND move_type IN ('in_invoice', 'in_refund', 'in_receipt','out_invoice','out_refund')));
+            """)
+        return res
 
     l10n_pe_edi_pse_uid = fields.Char(string='PSE Unique identifier', copy=False)
     l10n_pe_edi_pse_cancel_uid = fields.Char(string='PSE Identifier for Cancellation', copy=False)
@@ -34,7 +52,7 @@ class AccountMove(models.Model):
     l10n_pe_edi_void_accepted_by_sunat = fields.Boolean(string='Void EDI Accepted by Sunat', copy=False)
     l10n_pe_edi_rectification_ref_type = fields.Many2one('l10n_latam.document.type', string='Rectification - Invoice Type')
     l10n_pe_edi_rectification_ref_number = fields.Char('Rectification - Invoice number')
-    l10n_pe_edi_rectification_ref_date = fields.Char('Rectification - Invoice Date')
+    l10n_pe_edi_rectification_ref_date = fields.Date('Rectification - Invoice Date')
     l10n_pe_edi_payment_fee_ids = fields.One2many('account.move.l10n_pe_payment_fee','move_id', string='Credit Payment Fees')
     l10n_pe_edi_transportref_ids = fields.One2many(
         'account.move.l10n_pe_transportref', 'move_id', string='Attached Despatchs', copy=True)
@@ -48,6 +66,8 @@ class AccountMove(models.Model):
     l10n_pe_edi_cdr_file_link = fields.Char(string='CDR file', compute='_compute_l10n_pe_edi_links')
     l10n_pe_edi_cdr_void_file = fields.Many2one('ir.attachment', string='CDR Void file', copy=False)
     l10n_pe_edi_cdr_void_file_link = fields.Char(string='CDR Void file', compute='_compute_l10n_pe_edi_links')
+    l10n_pe_edi_show_cancel_button = fields.Boolean(compute='_compute_edi_show_cancel_button2')
+    l10n_pe_edi_show_reset_to_draft_button = fields.Boolean(compute='_compute_edi_show_reset_to_draft_button')
 
     def _compute_l10n_pe_edi_links(self):
         for move in self:
@@ -61,7 +81,27 @@ class AccountMove(models.Model):
         pe_edi_format = self.env.ref('l10n_pe_edi_pse_factura.edi_pe_pse')
         for move in self.filtered(lambda m: m.l10n_pe_edi_is_required):
             move.l10n_pe_edi_compute_fees()
+            self.env.ref('account_edi.ir_cron_edi_network')._trigger()
         return res
+    
+    '''def _get_last_sequence_domain(self, relaxed=False):
+        # OVERRIDE
+        where_string, param = super()._get_last_sequence_domain(relaxed)
+        if self.l10n_pe_edi_is_required:
+            where_string += " AND l10n_latam_document_type_id = %(l10n_latam_document_type_id)s"
+            param['l10n_latam_document_type_id'] = self.l10n_latam_document_type_id.id or 0
+        return where_string, param'''
+    
+    def _get_last_sequence_domain(self, relaxed=False):
+        where_string, param = super()._get_last_sequence_domain(relaxed=relaxed)
+        log.info('where_string: %s', where_string)
+        log.info('param: %s', param)
+        if self.l10n_pe_edi_is_required:
+            where_string += " AND l10n_latam_document_type_id = %(l10n_latam_document_type_id)s"
+            param['l10n_latam_document_type_id'] = self.l10n_latam_document_type_id.id or 0
+            if not relaxed:
+                param['anti_regex'] = 'NULL'''
+        return where_string, param
     
     def _get_starting_sequence(self):
         # OVERRIDE
@@ -76,8 +116,18 @@ class AccountMove(models.Model):
         return super()._get_starting_sequence()
 
     def l10n_pe_edi_retention_amount(self):
-        if self.partner_id.l10n_pe_edi_retention_type:
-            return self.amount_total*(0.03 if self.partner_id.l10n_pe_edi_retention_type=='01' else 0.06)
+        if self.company_id.currency_id.name=='PEN':
+            total_retention_min = 700
+            if self.currency_id.name=='USD':
+                total_retention_min = 186
+            if self.partner_id.l10n_pe_edi_retention_type and abs(self.amount_total)>=total_retention_min:
+                return self.amount_total*(0.03 if self.partner_id.l10n_pe_edi_retention_type=='01' else 0.06)
+        elif self.company_id.currency_id.name=='USD':
+            total_retention_min = 186
+            if self.currency_id.name=='PEN':
+                total_retention_min = 700
+            if self.partner_id.l10n_pe_edi_retention_type and abs(self.amount_total)>=total_retention_min:
+                return self.amount_total*(0.03 if self.partner_id.l10n_pe_edi_retention_type=='01' else 0.06)
         return 0
 
     def l10n_pe_edi_credit_amount_deduction(self):
@@ -139,6 +189,45 @@ class AccountMove(models.Model):
             'qr_str': '|'.join(qr_code_values) + '|\r\n',
             'amount_to_text': self._l10n_pe_edi_amount_to_text(),
         }
+    
+    @api.depends('edi_document_ids.state')
+    def _compute_edi_show_cancel_button(self):
+        for move in self:
+            move.edi_show_cancel_button = False
+    
+    @api.depends('edi_document_ids.state')
+    def _compute_edi_show_cancel_button2(self):
+        for move in self:
+            is_conflux_provider = False
+            edi_show_cancel_button = False
+            if move.state != 'posted':
+                move.l10n_pe_edi_show_cancel_button = False
+                continue
+            for doc in move.edi_document_ids.filtered(lambda doc: doc.state == 'sent'):
+                move_applicability = doc.edi_format_id._get_move_applicability(move)
+                if doc.edi_format_id==self.env.ref('l10n_pe_edi_pse_factura.edi_pe_pse'):
+                    move.l10n_pe_edi_show_cancel_button = True
+                    is_conflux_provider = True
+                    break
+                if move_applicability and move_applicability.get('cancel'):
+                    edi_show_cancel_button = True
+            if not is_conflux_provider:
+                move.l10n_pe_edi_show_cancel_button = edi_show_cancel_button
+
+    @api.depends('restrict_mode_hash_table', 'state')
+    def _compute_edi_show_reset_to_draft_button(self):
+        for move in self:
+            move.l10n_pe_edi_show_reset_to_draft_button = (
+                not move.restrict_mode_hash_table \
+                and (move.state == 'cancel' or (move.state == 'posted' and not move.need_cancel_request))
+            )
+        
+    def _can_force_cancel(self):
+        self.ensure_one()
+        pe_edi_format = self.env.ref('l10n_pe_edi_pse_factura.edi_pe_pse')
+        if pe_edi_format._get_move_applicability(self):
+            return True
+        return super()._can_force_cancel()
 
     def button_cancel(self):
         pe_edi_format = self.env.ref('l10n_pe_edi_pse_factura.edi_pe_pse')
@@ -158,6 +247,17 @@ class AccountMove(models.Model):
             if cancel_reason_needed:
                 return self.env.ref('l10n_pe_edi.action_l10n_pe_edi_cancel').sudo().read()[0]
         return super().button_cancel_posted_moves()
+    
+    def action_l10n_pe_edi_pse_status(self):
+        for rec in self:
+            if rec.l10n_pe_edi_pse_status=='ask_for_status' and rec.l10n_pe_edi_pse_uid:
+                docs = rec.edi_document_ids.filtered(lambda d: d.state in ('sent',))
+                edi_filename = '%s-%s-%s' % (
+                    rec.company_id.vat,
+                    rec.l10n_latam_document_type_id.code,
+                    rec.name.replace(' ', ''),
+                )
+                docs.edi_format_id._l10n_pe_edi_sign_invoices_conflux(rec, edi_filename, '')
 
 class AccountMoveLine(models.Model):
     _inherit = 'account.move.line'

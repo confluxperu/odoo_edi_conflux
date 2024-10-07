@@ -178,6 +178,9 @@ class AccountEdiFormat(models.Model):
                 if line.price_subtotal<0 and line.l10n_pe_edi_allowance_charge_reason_code=='03':
                     descuento_importe_03+=abs(line.price_subtotal)
                     continue
+                if not line.l10n_pe_edi_downpayment_line and line.price_subtotal<0:
+                    descuento_importe_02+=abs(line.price_subtotal)
+                    continue
                 else:
                     descuento_base+=abs(line.price_subtotal)
                     default_uom = 'NIU'
@@ -205,15 +208,34 @@ class AccountEdiFormat(models.Model):
                                 igv_type = tax['tax_category_vals']['tax_exemption_reason_code']
                             if tax['tax_category_vals']['tax_scheme_vals']['name'] == 'GRA':
                                 is_free = True
-                        
+                    valor_unitario = float_round(line.price_subtotal / abs(line.quantity), precision_digits=price_precision) if line.quantity else 0.0
+                    precio_unitario = float_round(line.price_total / abs(line.quantity), precision_digits=price_precision) if line.quantity else 0.0
+                    if line.discount==100:
+                        '''
+                        taxes_res = line.tax_ids.compute_all(
+                            line.price_unit,
+                            quantity=1,
+                            currency=line.currency_id,
+                            product=line.product_id,
+                            partner=line.partner_id,
+                            is_refund=line.is_refund,
+                        )
+                        precio_unitario = taxes_res['total_included']
+                        valor_unitario = taxes_res['total_excluded']
+                        '''
+                        precio_unitario = line.price_unit
+                        valor_unitario = line.price_unit
+                        if igv_type=='10':
+                            igv_type = '32'
+                        is_free = True
                     _item = {
                         "codigo":line.product_id.default_code if line.product_id.default_code else '',
                         "codigo_producto_sunat":line.product_id.unspsc_code_id.code if line.product_id.unspsc_code_id else '',
                         "descripcion":line.name.replace('[%s] ' % line.product_id.default_code,'') if line.product_id else line.name,
                         "cantidad":abs(invoice_line['line_quantity']),
                         "unidad_de_medida":line.product_uom_id.l10n_pe_edi_measure_unit_code if line.product_uom_id.l10n_pe_edi_measure_unit_code else default_uom,
-                        'valor_unitario': float_round(line.price_subtotal / abs(line.quantity), precision_digits=price_precision) if line.quantity else 0.0,
-                        'precio_unitario': float_round(line.price_total / abs(line.quantity), precision_digits=price_precision) if line.quantity else 0.0,
+                        'valor_unitario': valor_unitario,
+                        'precio_unitario': precio_unitario,
                         "subtotal":line.price_subtotal if not is_free else 0,
                         "total":line.price_total if not is_free else icbper_amount,
                         "tipo_de_igv": igv_type,
@@ -232,7 +254,7 @@ class AccountEdiFormat(models.Model):
                     if isc_amount>0:
                         _item['tipo_de_calculo_isc'] = isc_type
 
-                    if line.l10n_pe_edi_downpayment_line:
+                    if line.l10n_pe_edi_downpayment_line and line.price_subtotal<0:
                         _item['anticipo_regularizacion'] = line.l10n_pe_edi_downpayment_line
                         _item['anticipo_numero_de_documento'] = line.l10n_pe_edi_downpayment_ref_number
                         _item['anticipo_tipo_de_documento'] = line.l10n_pe_edi_downpayment_ref_type
@@ -245,10 +267,14 @@ class AccountEdiFormat(models.Model):
             conflux_dte['orden_compra_servicio'] = record.ref[:20]
         if record.partner_id.email:
             conflux_dte['cliente_email'] = record.partner_id.email
+        if record.invoice_user_id:
+            conflux_dte['vendedor'] = record.invoice_user_id.name
         if record.narration and record.narration!='':
             conflux_dte['observaciones'] = record.narration
         if record.company_id.l10n_pe_edi_address_type_code and record.company_id.l10n_pe_edi_address_type_code!='0000':
             conflux_dte['establecimiento_anexo'] = record.company_id.l10n_pe_edi_address_type_code
+        if record.invoice_payment_term_id:
+            conflux_dte['condiciones_de_pago'] = record.invoice_payment_term_id.name
 
         if descuento_importe_02>0:
             conflux_dte["descuento_tipo"]="02"
@@ -284,8 +310,8 @@ class AccountEdiFormat(models.Model):
             })
 
         #spot = record._l10n_pe_edi_get_spot()
-        
-        if record.partner_id.l10n_pe_edi_retention_type:
+        #total_retention_min = conflux_dte['total'] if conflux_dte['moneda']=='PEN' else conflux_dte['total']*conflux_dte['tipo_de_cambio']
+        if record.partner_id.l10n_pe_edi_retention_type and record.l10n_pe_edi_retention_amount()>0:
             conflux_dte["retencion_tipo"]=record.partner_id.l10n_pe_edi_retention_type
             conflux_dte["total_retencion"]=record.l10n_pe_edi_retention_amount()
             conflux_dte["retencion_base_imponible"]=conflux_dte["total_retencion"]/(0.03 if record.partner_id.l10n_pe_edi_retention_type=='01' else 0.06)
@@ -414,6 +440,9 @@ class AccountEdiFormat(models.Model):
         }
 
     def _l10n_pe_edi_sign_invoice_pse(self, invoice):
+        if invoice.l10n_pe_edi_pse_uid:
+            #self.state = 'sent'
+            return {invoice:{'success':True}}
         edi_filename = '%s-%s-%s' % (
             invoice.company_id.vat,
             invoice.l10n_latam_document_type_id.code,
@@ -477,13 +506,13 @@ class AccountEdiFormat(models.Model):
         success = False
         if result.get('status')=='success':
             edi_status = 'ask_for_status'
+            success = True
             if result['success']['data'].get('enlace_del_xml', False):
                 xml_url = result['success']['data']['enlace_del_xml']
             if result['success']['data'].get('enlace_del_pdf', False):
                 pdf_url = result['success']['data']['enlace_del_pdf']
             if result['success']['data'].get('emision_aceptada', False):
                 edi_status = 'accepted'
-                success = True
                 if result['success']['data'].get('enlace_del_cdr', False):
                     cdr_url = result['success']['data']['enlace_del_cdr']
             if result['success']['data'].get('emision_rechazada', False):
@@ -612,6 +641,8 @@ class AccountEdiFormat(models.Model):
         # EXTENDS account_edi
         self.ensure_one()
         if self.code != 'pe_pse':
+            if self.code == 'pe_ubl_2_1':
+                return {}
             return super()._get_move_applicability(move)
 
         if move.l10n_pe_edi_is_required:

@@ -72,7 +72,7 @@ class LogisticDespatch(models.Model):
             if rec.warehouse_id.despatch_sequence_ids:
                 rec.domain_sequence_id = rec.warehouse_id.despatch_sequence_ids
             else:
-                rec.domain_sequence_id = self.env['ir.sequence'].search([('code','=','logistic.despatch')])
+                rec.domain_sequence_id = self.env['ir.sequence'].search([('code','=','logistic.despatch'),('company_id','=', rec.company_id.id)])
 
     @api.depends('line_ids.weight','line_ids.volume')
     def _compute_weight_and_volume(self):

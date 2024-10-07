@@ -13,5 +13,9 @@
         <field name="implied_ids" eval="[(4, ref('group_user'))]"/>
         <field name="category_id" ref="logistic_group_category"/>
     </record>
-    
+    <record id="logisitc_despatch_company_rule" model="ir.rule">
+        <field name="name">Logistic Despatch multi-company</field>
+        <field name="model_id" ref="model_logistic_despatch"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
 </odoo>

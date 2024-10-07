@@ -23,6 +23,7 @@
             </field>
             <field name="sequence_id" position="after">
                 <field name="l10n_pe_edi_invoice_number" readonly="state != 'draft'"/>
+                <field name="l10n_pe_edi_purchase_order" readonly="state != 'draft'"/>
             </field>
             <field name="carrier_id" position="attributes">
                 <attribute name="required">l10n_pe_edi_transport_mode == '01'</attribute>
@@ -50,13 +51,13 @@
             </field>
 
             <div class="oe_button_box" position="inside">
-                <button class="text-warning" icon="fa-refresh" invisible="l10n_pe_edi_status !='ask_for_status' or not l10n_pe_edi_pse_uid or state != 'open'">
+                <button type="object" name="l10n_pe_edi_action_check" class="text-warning" icon="fa-refresh" invisible="l10n_pe_edi_status !='ask_for_status' or not l10n_pe_edi_pse_uid or state != 'open'">
                     <div class="o_stat_info">
                         <span class="o_stat_text">Get Status in</span>
                         <span class="o_stat_text">SUNAT</span>
                     </div>
                 </button>
-                <button class="text-danger" icon="fa-cancel" invisible="l10n_pe_edi_status != 'rejected' or not l10n_pe_edi_pse_uid or state != 'open'" >
+                <button class="text-danger" icon="fa-times" invisible="l10n_pe_edi_status != 'rejected' or not l10n_pe_edi_pse_uid or state != 'open'" >
                     <div class="o_stat_info">
                         <span class="o_stat_text">Rejected by</span>
                         <span class="o_stat_text">SUNAT</span>

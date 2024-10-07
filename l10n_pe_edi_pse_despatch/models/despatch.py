@@ -112,7 +112,22 @@ class LogisticDespatch(models.Model):
     l10n_pe_edi_shipment_description = fields.Char(string='Motivo de envio')
 
     l10n_pe_edi_invoice_number = fields.Char(string='Numero de Factura')
+    l10n_pe_edi_purchase_order = fields.Char(string='Orden de Compra')
     l10n_pe_edi_is_einvoice = fields.Boolean('Is E-invoice')
+
+    @api.onchange('origin_address_id')
+    def _onchange_origin_address_id(self):
+        if self.origin_address_id and self.l10n_pe_edi_shipment_reason=='04':
+            self.l10n_pe_edi_origin_branch_code = self.origin_address_id.l10n_pe_edi_address_type_code
+        else:
+            self.l10n_pe_edi_origin_branch_code = ''
+
+    @api.onchange('delivery_address_id')
+    def _onchange_delivery_address_id(self):
+        if self.delivery_address_id and self.l10n_pe_edi_shipment_reason=='04':
+            self.l10n_pe_edi_delivery_branch_code = self.delivery_address_id.l10n_pe_edi_address_type_code
+        else:
+            self.l10n_pe_edi_delivery_branch_code = ''
 
     def _compute_l10n_pe_edi_links(self):
         for move in self:
@@ -346,6 +361,8 @@ class LogisticDespatch(models.Model):
 
         if self.l10n_pe_edi_invoice_number:
             _despatch['numero_de_factura_referencia'] = self.l10n_pe_edi_invoice_number
+        if self.l10n_pe_edi_purchase_order:
+            _despatch['orden_compra_servicio'] = self.l10n_pe_edi_purchase_order
         if self.note:
             if self.note!='':
                 _despatch['observaciones'] = self.note
