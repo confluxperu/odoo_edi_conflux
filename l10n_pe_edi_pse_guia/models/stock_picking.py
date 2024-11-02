@@ -232,7 +232,7 @@ class Picking(models.Model):
             for move in base_dte.get('moves'):
                 _item = {
                     'cantidad': move.quantity,
-                    'descripcion': move.description_picking if move.description_picking else move.product_id.name,
+                    'descripcion': move.product_id.name,
                     'codigo': move.product_id.default_code or '',
                     'codigo_producto_sunat': move.product_id.unspsc_code_id.code or '',
                     'unidad_de_medida': move.product_uom.l10n_pe_edi_measure_unit_code or 'NIU',

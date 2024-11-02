@@ -267,14 +267,10 @@ class AccountEdiFormat(models.Model):
             conflux_dte['orden_compra_servicio'] = record.ref[:20]
         if record.partner_id.email:
             conflux_dte['cliente_email'] = record.partner_id.email
-        if record.invoice_user_id:
-            conflux_dte['vendedor'] = record.invoice_user_id.name
         if record.narration and record.narration!='':
             conflux_dte['observaciones'] = record.narration
         if record.company_id.l10n_pe_edi_address_type_code and record.company_id.l10n_pe_edi_address_type_code!='0000':
             conflux_dte['establecimiento_anexo'] = record.company_id.l10n_pe_edi_address_type_code
-        if record.invoice_payment_term_id:
-            conflux_dte['condiciones_de_pago'] = record.invoice_payment_term_id.name
 
         if descuento_importe_02>0:
             conflux_dte["descuento_tipo"]="02"
@@ -291,11 +287,15 @@ class AccountEdiFormat(models.Model):
             conflux_dte['tipo_de_nota_de_credito'] = record.l10n_pe_edi_refund_reason
             conflux_dte['documento_que_se_modifica_tipo'] = record.l10n_pe_edi_rectification_ref_type.code
             conflux_dte['documento_que_se_modifica_numero'] = record.l10n_pe_edi_rectification_ref_number
+            if record.l10n_pe_edi_rectification_ref_date:
+                conflux_dte['documento_que_se_modifica_fecha'] = record.l10n_pe_edi_rectification_ref_date.strftime('%Y-%m-%d')
         
         if record.l10n_latam_document_type_id.code=='08':
             conflux_dte['tipo_de_nota_de_debito'] = record.l10n_pe_edi_charge_reason
             conflux_dte['documento_que_se_modifica_tipo'] = record.l10n_pe_edi_rectification_ref_type.code
             conflux_dte['documento_que_se_modifica_numero'] = record.l10n_pe_edi_rectification_ref_number
+            if record.l10n_pe_edi_rectification_ref_date:
+                conflux_dte['documento_que_se_modifica_fecha'] = record.l10n_pe_edi_rectification_ref_date.strftime('%Y-%m-%d')
 
         if record.l10n_latam_document_type_id.code=='01' and record.invoice_date_due:
             conflux_dte['fecha_de_vencimiento'] = record.invoice_date_due.strftime('%Y-%m-%d')
