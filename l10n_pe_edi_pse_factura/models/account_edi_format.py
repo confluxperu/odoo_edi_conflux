@@ -267,10 +267,14 @@ class AccountEdiFormat(models.Model):
             conflux_dte['orden_compra_servicio'] = record.ref[:20]
         if record.partner_id.email:
             conflux_dte['cliente_email'] = record.partner_id.email
+        if record.invoice_user_id:
+            conflux_dte['vendedor'] = record.invoice_user_id.name
         if record.narration and record.narration!='':
             conflux_dte['observaciones'] = record.narration
         if record.company_id.l10n_pe_edi_address_type_code and record.company_id.l10n_pe_edi_address_type_code!='0000':
             conflux_dte['establecimiento_anexo'] = record.company_id.l10n_pe_edi_address_type_code
+        if record.invoice_payment_term_id:
+            conflux_dte['condiciones_de_pago'] = record.invoice_payment_term_id.name
 
         if descuento_importe_02>0:
             conflux_dte["descuento_tipo"]="02"

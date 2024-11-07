@@ -214,6 +214,21 @@ class AccountMove(models.Model):
             if not is_conflux_provider:
                 move.l10n_pe_edi_show_cancel_button = edi_show_cancel_button
 
+    @api.depends('restrict_mode_hash_table', 'state')
+    def _compute_edi_show_reset_to_draft_button(self):
+        for move in self:
+            move.l10n_pe_edi_show_reset_to_draft_button = (
+                not move.restrict_mode_hash_table \
+                and (move.state == 'cancel' or (move.state == 'posted' and not move.need_cancel_request))
+            )
+        
+    def _can_force_cancel(self):
+        self.ensure_one()
+        pe_edi_format = self.env.ref('l10n_pe_edi_pse_factura.edi_pe_pse')
+        if pe_edi_format._get_move_applicability(self):
+            return True
+        return super()._can_force_cancel()
+
     def button_cancel(self):
         pe_edi_format = self.env.ref('l10n_pe_edi_pse_factura.edi_pe_pse')
         if self.is_sale_document() and self.l10n_pe_edi_pse_uid and not self.l10n_pe_edi_pse_cancel_uid:
