@@ -3,6 +3,7 @@ from . import res_company
 from . import res_config_settings
 from . import res_partner
 from . import account_edi_xml_ubl_pe
+from . import account_edi_document
 from . import account_edi_format
 from . import invoice_payment_fee
 from . import invoice_transport_ref
