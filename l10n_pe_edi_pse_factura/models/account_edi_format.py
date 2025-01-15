@@ -458,6 +458,7 @@ class AccountEdiFormat(models.Model):
         if not latam_invoice_type:
             return {invoice: {'error': _("Missing LATAM document code.")}}
 
+        log.info("ENVIO DE COMPROBANTE %s DE EMPRESA: %s" % (invoice.id, invoice.company_id.name))
         res = self._l10n_pe_edi_post_invoice_web_service_pse(invoice, edi_filename, edi_str)
 
         return {invoice: res}
