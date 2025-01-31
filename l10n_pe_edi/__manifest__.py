@@ -5,7 +5,7 @@
     'version': '0.1',
     'summary': 'Electronic Invoicing for Peru (OSE method) and UBL 2.1',
     'category': 'Accounting/Localizations/EDI',
-    'author': 'Vauxoo',
+    'author': 'Conflux',
 'description': """
 EDI Peru Localization
 ======================
