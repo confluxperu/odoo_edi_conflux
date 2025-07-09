@@ -537,6 +537,7 @@ class LogisticDespatchLine(models.Model):
 
 class LogisticDespatchReference(models.Model):
     _name = 'logistic.despatch.reference'
+    _description = "Logistic Despatch Reference"
 
     despatch_id = fields.Many2one('logistic.despatch')
     partner_id = fields.Many2one('res.partner', string='Cliente/Proveedor')
