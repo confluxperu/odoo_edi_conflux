@@ -90,9 +90,6 @@ class AccountEdiFormat(models.Model):
         if len(invoice_sequence)==2:
             dte_serial = invoice_sequence[0]
             dte_number = invoice_sequence[1]
-            # ! Se agrega esta condición porque en SJM 17, las Rectificativas salen con este formato "F 001-00000098 [28320]"
-            if "[" in dte_number:
-                dte_number = dte_number.split("[")[0]
 
         conflux_dte = {
             "enviar":True,
