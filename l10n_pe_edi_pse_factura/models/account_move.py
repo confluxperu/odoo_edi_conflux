@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from odoo import api, fields, models,_
+from odoo.tools import float_round, float_repr
 import logging
 log = logging.getLogger(__name__)
 
@@ -89,6 +90,31 @@ class AccountMove(models.Model):
         if self.partner_id.l10n_pe_edi_retention_type:
             return self.amount_total*(0.03 if self.partner_id.l10n_pe_edi_retention_type=='01' else 0.06)
         return 0
+
+    def _l10n_pe_edi_get_spot(self):
+        max_percent = max(self.invoice_line_ids.mapped('product_id.l10n_pe_withhold_percentage'), default=0)
+        if not max_percent or not self.l10n_pe_edi_operation_type in ['1001', '1002', '1003', '1004'] or self.move_type == 'out_refund':
+            return {}
+        line = self.invoice_line_ids.filtered(lambda r: r.product_id.l10n_pe_withhold_percentage == max_percent)[0]
+        national_bank = self.env.ref('l10n_pe_edi.peruvian_national_bank', raise_if_not_found=False)
+        national_bank_account_number = False
+        if national_bank:
+            national_bank_account = self.company_id.bank_ids.filtered(lambda b: b.bank_id == national_bank)
+            if national_bank_account:
+                # just take the first one (but not meant to have multiple)
+                national_bank_account_number = national_bank_account[0].acc_number
+
+        return {
+            'ID': 'Detraccion',
+            'PaymentMeansID': line.product_id.l10n_pe_withhold_code,
+            'PayeeFinancialAccount': national_bank_account_number,
+            'PaymentMeansCode': '999',
+            'spot_amount': float_round(self.amount_total * (max_percent/100.0), precision_rounding=2),
+            'Amount': float_repr(float_round(self.amount_total_signed * (max_percent/100.0), precision_rounding=2), precision_digits=2),
+            'PaymentPercent': max_percent,
+            'spot_message': "Operación sujeta al sistema de Pago de Obligaciones Tributarias-SPOT, Banco de la Nacion %s%% Cod Serv. %s" % (
+                line.product_id.l10n_pe_withhold_percentage, line.product_id.l10n_pe_withhold_code)
+        }
 
     def l10n_pe_edi_credit_amount_deduction(self):
         spot = self._l10n_pe_edi_get_spot()
