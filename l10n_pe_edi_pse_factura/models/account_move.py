@@ -120,7 +120,10 @@ class AccountMove(models.Model):
         spot = self._l10n_pe_edi_get_spot()
         amount = 0
         if spot:
-            amount+=spot['spot_amount']
+            if self.currency_id != self.company_id.currency_id:
+                amount+=spot['spot_amount']
+            else:
+                amount+=spot['Amount']
         if self.partner_id.l10n_pe_edi_retention_type:
             amount+=self.l10n_pe_edi_retention_amount()
         return amount
