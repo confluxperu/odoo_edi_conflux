@@ -123,6 +123,7 @@ class AccountMove(models.Model):
             if self.currency_id != self.company_id.currency_id:
                 amount+=spot['spot_amount']
             else:
+                log.info('spot: %s', spot)
                 amount+=spot['Amount']
         if self.partner_id.l10n_pe_edi_retention_type:
             amount+=self.l10n_pe_edi_retention_amount()
